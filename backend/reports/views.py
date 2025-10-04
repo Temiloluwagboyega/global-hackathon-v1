@@ -88,17 +88,25 @@ class ReportDetailView(RetrieveAPIView):
 	"""
 	API view to retrieve a single disaster report.
 	"""
-	queryset = DisasterReport.objects.all()
 	serializer_class = DisasterReportSerializer
 	permission_classes = [AllowAny]
 	lookup_field = 'id'
+	
+	def get_object(self):
+		"""Get object by MongoDB ObjectId."""
+		obj_id = self.kwargs.get(self.lookup_field)
+		try:
+			from bson import ObjectId
+			return DisasterReport.objects.get(id=ObjectId(obj_id))
+		except:
+			from django.http import Http404
+			raise Http404("Report not found")
 
 
 class CreateReportView(CreateAPIView):
 	"""
 	API view to create a new disaster report.
 	"""
-	queryset = DisasterReport.objects.all()
 	serializer_class = CreateDisasterReportSerializer
 	permission_classes = [AllowAny]
 	
@@ -136,10 +144,19 @@ class UpdateReportStatusView(UpdateAPIView):
 	"""
 	API view to update report status.
 	"""
-	queryset = DisasterReport.objects.all()
 	serializer_class = UpdateReportStatusSerializer
 	permission_classes = [AllowAny]
 	lookup_field = 'id'
+	
+	def get_object(self):
+		"""Get object by MongoDB ObjectId."""
+		obj_id = self.kwargs.get(self.lookup_field)
+		try:
+			from bson import ObjectId
+			return DisasterReport.objects.get(id=ObjectId(obj_id))
+		except:
+			from django.http import Http404
+			raise Http404("Report not found")
 	
 	def update(self, request, *args, **kwargs):
 		partial = kwargs.pop('partial', False)

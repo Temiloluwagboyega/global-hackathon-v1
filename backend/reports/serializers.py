@@ -1,8 +1,23 @@
 from rest_framework import serializers
+from mongoengine import Document
 from .models import DisasterReport
 
 
-class DisasterReportSerializer(serializers.ModelSerializer):
+class MongoEngineSerializer(serializers.Serializer):
+	"""
+	Base serializer for MongoEngine documents.
+	"""
+	def create(self, validated_data):
+		model_class = self.Meta.model
+		return model_class(**validated_data).save()
+	
+	def update(self, instance, validated_data):
+		for attr, value in validated_data.items():
+			setattr(instance, attr, value)
+		return instance.save()
+
+
+class DisasterReportSerializer(MongoEngineSerializer):
 	"""
 	Serializer for DisasterReport model.
 	"""
@@ -59,7 +74,7 @@ class DisasterReportSerializer(serializers.ModelSerializer):
 		return data
 
 
-class CreateDisasterReportSerializer(serializers.ModelSerializer):
+class CreateDisasterReportSerializer(MongoEngineSerializer):
 	"""
 	Serializer for creating new disaster reports.
 	"""
@@ -98,7 +113,7 @@ class CreateDisasterReportSerializer(serializers.ModelSerializer):
 		return value
 
 
-class UpdateReportStatusSerializer(serializers.ModelSerializer):
+class UpdateReportStatusSerializer(MongoEngineSerializer):
 	"""
 	Serializer for updating report status.
 	"""
