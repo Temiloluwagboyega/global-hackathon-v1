@@ -1,5 +1,6 @@
 import { MapPin, AlertTriangle, Car, Building } from 'lucide-react'
 import { getDisasterDisplayName } from '../../utils'
+import { useHealthCheck, useReporterId } from '../../hooks/api/useReports'
 import type { DisasterType } from '../../types'
 
 interface NavbarProps {
@@ -14,6 +15,12 @@ const disasterTypes: { type: DisasterType; icon: React.ReactNode }[] = [
 ]
 
 export const Navbar = ({ className }: NavbarProps) => {
+	const { data: healthData, isLoading: healthLoading } = useHealthCheck()
+	const { data: reporterData } = useReporterId()
+
+	const isBackendConnected = healthData?.status === 'healthy'
+	const reporterId = reporterData?.reporter_id
+
 	return (
 		<nav className={`bg-white border-b border-gray-200 px-4 py-3 ${className}`}>
 			<div className="flex items-center justify-between">
@@ -42,12 +49,34 @@ export const Navbar = ({ className }: NavbarProps) => {
 					</div>
 				</div>
 
-				{/* Status Indicator */}
-				<div className="flex items-center gap-2">
-					<div className="flex items-center gap-1 text-sm text-green-600">
-						<div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-						<span className="hidden sm:inline">Live</span>
+				{/* Status Indicators */}
+				<div className="flex items-center gap-3">
+					{/* Backend Status */}
+					<div className="flex items-center gap-1 text-sm">
+						{healthLoading ? (
+							<div className="flex items-center gap-1 text-gray-500">
+								<div className="h-2 w-2 bg-gray-400 rounded-full animate-pulse"></div>
+								<span className="hidden sm:inline">Connecting...</span>
+							</div>
+						) : isBackendConnected ? (
+							<div className="flex items-center gap-1 text-green-600">
+								<div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+								<span className="hidden sm:inline">Backend Connected</span>
+							</div>
+						) : (
+							<div className="flex items-center gap-1 text-red-600">
+								<div className="h-2 w-2 bg-red-500 rounded-full"></div>
+								<span className="hidden sm:inline">Backend Offline</span>
+							</div>
+						)}
 					</div>
+
+					{/* Reporter ID */}
+					{reporterId && (
+						<div className="hidden lg:flex items-center gap-1 text-xs text-gray-500">
+							<span>ID: {reporterId.slice(-8)}</span>
+						</div>
+					)}
 				</div>
 			</div>
 

@@ -6,6 +6,8 @@ import type { CreateReportRequest } from '../../types'
 export const queryKeys = {
 	reports: ['reports'] as const,
 	aiSummary: ['aiSummary'] as const,
+	reporterId: ['reporterId'] as const,
+	health: ['health'] as const,
 }
 
 // Hook to fetch all reports with polling
@@ -71,5 +73,30 @@ export const useUpdateReportStatus = () => {
 		onError: (error) => {
 			console.error('Failed to update report status:', error)
 		},
+	})
+}
+
+// Hook to get reporter ID (session-based)
+export const useReporterId = () => {
+	return useQuery({
+		queryKey: queryKeys.reporterId,
+		queryFn: reportsApi.getReporterId,
+		staleTime: 30 * 60 * 1000, // Consider data stale after 30 minutes
+		gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
+		retry: 2,
+		refetchOnWindowFocus: false, // Don't refetch on window focus for reporter ID
+	})
+}
+
+// Hook for health check
+export const useHealthCheck = () => {
+	return useQuery({
+		queryKey: queryKeys.health,
+		queryFn: reportsApi.healthCheck,
+		refetchInterval: 30 * 1000, // Poll every 30 seconds
+		staleTime: 10 * 1000, // Consider data stale after 10 seconds
+		gcTime: 2 * 60 * 1000, // Keep in cache for 2 minutes
+		retry: 1,
+		refetchOnWindowFocus: true,
 	})
 }

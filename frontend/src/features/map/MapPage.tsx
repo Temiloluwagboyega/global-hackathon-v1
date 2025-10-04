@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { Navbar } from '../../components/layout/Navbar'
 import { DisasterMap } from '../../components/map/DisasterMap'
@@ -9,27 +8,19 @@ import { AlertBanner } from '../../components/layout/AlertBanner'
 import { FloatingAISummary } from '../../components/layout/FloatingAISummary'
 import { Modal } from '../../components/ui/Modal'
 import { ReportForm } from '../../components/forms/ReportForm'
-import { useReports } from '../../hooks/api/useReports'
+import { useReports, useReporterId, useHealthCheck } from '../../hooks/api/useReports'
 import { useGeolocation } from '../../hooks/geolocation/useGeolocation'
 import type { DisasterReport, Coordinates } from '../../types'
 
-// Create a client
-const queryClient = new QueryClient({
-	defaultOptions: {
-		queries: {
-			staleTime: 5 * 60 * 1000, // 5 minutes
-			gcTime: 10 * 60 * 1000, // 10 minutes
-		},
-	},
-})
-
-const MapPageContent = () => {
+const MapPage = () => {
 	const [showReportForm, setShowReportForm] = useState(false)
 	const [selectedReport, setSelectedReport] = useState<DisasterReport | null>(null)
 	const [selectedLocation, setSelectedLocation] = useState<Coordinates | null>(null)
 	const [mapCenter, setMapCenter] = useState<Coordinates>({ lat: 6.5244, lng: 3.3792 }) // Lagos default
 
 	const { data: reportsData, isLoading } = useReports()
+	const { data: reporterIdData } = useReporterId()
+	const { data: healthData } = useHealthCheck()
 	const { location: userLocation, getCurrentPosition } = useGeolocation()
 
 	const reports = reportsData?.reports || []
@@ -143,10 +134,4 @@ const MapPageContent = () => {
 	)
 }
 
-export const MapPage = () => {
-	return (
-		<QueryClientProvider client={queryClient}>
-			<MapPageContent />
-		</QueryClientProvider>
-	)
-}
+export { MapPage }

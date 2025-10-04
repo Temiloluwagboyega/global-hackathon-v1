@@ -9,12 +9,13 @@ export const apiClient = axios.create({
 	headers: {
 		'Content-Type': 'application/json',
 	},
+	withCredentials: true, // Enable cookies for session-based reporter ID
 })
 
 // Request interceptor
 apiClient.interceptors.request.use(
 	(config) => {
-		// Add auth token if available
+		// Add auth token if available (for future use)
 		const token = localStorage.getItem('auth_token')
 		if (token) {
 			config.headers.Authorization = `Bearer ${token}`

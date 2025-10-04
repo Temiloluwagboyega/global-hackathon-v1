@@ -9,6 +9,7 @@ import sys
 import django
 from datetime import datetime, timedelta
 import random
+from django.utils import timezone
 
 # Add the project directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -116,7 +117,7 @@ def create_sample_reports():
 			status = random.choice(status_choices)
 			
 			# Random creation time (within last 7 days)
-			created_at = datetime.now() - timedelta(
+			created_at = timezone.now() - timedelta(
 				days=random.randint(0, 7),
 				hours=random.randint(0, 23),
 				minutes=random.randint(0, 59)
@@ -175,6 +176,8 @@ def main():
 		
 	except Exception as e:
 		print(f'Error creating sample reports: {e}')
+		import traceback
+		traceback.print_exc()
 		sys.exit(1)
 
 

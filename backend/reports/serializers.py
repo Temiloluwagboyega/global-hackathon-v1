@@ -6,6 +6,7 @@ class DisasterReportSerializer(serializers.ModelSerializer):
 	"""
 	Serializer for DisasterReport model.
 	"""
+	id = serializers.CharField(read_only=True)  # Handle MongoDB ObjectId as string
 	location = serializers.SerializerMethodField()
 	timestamp = serializers.SerializerMethodField()
 	image_url = serializers.SerializerMethodField()
@@ -41,6 +42,12 @@ class DisasterReportSerializer(serializers.ModelSerializer):
 		data = super().to_representation(instance)
 		# Map disaster_type to type for frontend compatibility
 		data['type'] = instance.disaster_type
+		
+		# Handle MongoDB ObjectId conversion
+		if hasattr(instance, 'id') and instance.id:
+			# Convert ObjectId to string for JSON serialization
+			data['id'] = str(instance.id)
+		
 		return data
 
 

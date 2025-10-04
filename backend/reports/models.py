@@ -21,7 +21,7 @@ class DisasterReport(models.Model):
 		('investigating', 'Under Investigation'),
 	]
 	
-	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+	id = models.AutoField(primary_key=True)
 	disaster_type = models.CharField(
 		max_length=20,
 		choices=DISASTER_TYPE_CHOICES,

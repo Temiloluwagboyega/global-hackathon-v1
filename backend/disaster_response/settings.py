@@ -14,7 +14,6 @@ import os
 from pathlib import Path
 from decouple import config
 import dj_database_url
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -84,9 +83,17 @@ WSGI_APPLICATION = 'disaster_response.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 
+# MongoDB configuration
 DATABASES = {
-    'default': dj_database_url.parse(config('DATABASE_URL', default='sqlite:///db.sqlite3'))
+    'default': {
+        'ENGINE': 'djongo',
+        'NAME': config('MONGODB_NAME', default='disaster_response'),
+        'CLIENT': {
+            'host': config('MONGODB_URI', default='mongodb+srv://username:password@cluster.mongodb.net/disaster_response?retryWrites=true&w=majority'),
+        }
+    }
 }
+
 
 
 

@@ -18,6 +18,7 @@ from .serializers import (
 	ReportsResponseSerializer,
 	CreateReportResponseSerializer,
 )
+from .utils import get_or_create_session_reporter, get_anonymous_reporter_id, validate_reporter_id
 
 
 def haversine_distance(lat1, lon1, lat2, lon2):
@@ -104,21 +105,30 @@ class CreateReportView(CreateAPIView):
 	permission_classes = [AllowAny]
 	
 	def create(self, request, *args, **kwargs):
-		serializer = self.get_serializer(data=request.data)
+		# Get or create reporter ID from session
+		reporter_id = get_or_create_session_reporter(request)
+		
+		# Add reporter_id to the data
+		data = request.data.copy()
+		data['reporter_id'] = reporter_id
+		
+		serializer = self.get_serializer(data=data)
 		if serializer.is_valid():
 			report = serializer.save()
 			response_serializer = DisasterReportSerializer(report)
 			
 			response_data = {
 				'success': True,
-				'report': response_serializer.data
+				'report': response_serializer.data,
+				'reporter_id': reporter_id
 			}
 			
 			return Response(response_data, status=status.HTTP_201_CREATED)
 		
 		response_data = {
 			'success': False,
-			'error': 'Failed to create report. Please check your data.'
+			'error': 'Failed to create report. Please check your data.',
+			'errors': serializer.errors
 		}
 		
 		return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
@@ -191,6 +201,21 @@ def ai_summary_view(request):
 			{'error': 'Failed to generate AI summary'},
 			status=status.HTTP_500_INTERNAL_SERVER_ERROR
 		)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_reporter_id_view(request):
+	"""
+	API view to get or create a reporter ID for the current session.
+	"""
+	reporter_id = get_or_create_session_reporter(request)
+	
+	return Response({
+		'reporter_id': reporter_id,
+		'session_active': True,
+		'timestamp': timezone.now().isoformat()
+	})
 
 
 @api_view(['GET'])
