@@ -54,34 +54,68 @@ class ReportsListView(ListAPIView):
 	permission_classes = [AllowAny]
 	
 	def get_queryset(self):
-		queryset = DisasterReport.objects.all()
-		
-		# Get query parameters
-		lat = self.request.query_params.get('lat')
-		lng = self.request.query_params.get('lng')
-		radius = float(self.request.query_params.get('radius', 10))  # Default 10km
-		
-		# If lat/lng provided, filter by radius
-		if lat and lng:
-			try:
-				lat = float(lat)
-				lng = float(lng)
-				
-				# Filter reports within radius
-				filtered_reports = []
-				for report in queryset:
-					distance = haversine_distance(lat, lng, report.latitude, report.longitude)
-					if distance <= radius:
-						filtered_reports.append(report)
-				
-				# Return filtered reports as a list (MongoEngine doesn't support id__in with ObjectIds)
-				return filtered_reports
-				
-			except (ValueError, TypeError):
-				# If invalid coordinates, return all reports
-				pass
-		
-		return queryset
+		try:
+			queryset = DisasterReport.objects.all()
+			
+			# Get query parameters
+			lat = self.request.query_params.get('lat')
+			lng = self.request.query_params.get('lng')
+			radius = float(self.request.query_params.get('radius', 10))  # Default 10km
+			
+			# If lat/lng provided, filter by radius
+			if lat and lng:
+				try:
+					lat = float(lat)
+					lng = float(lng)
+					
+					# Filter reports within radius
+					filtered_reports = []
+					for report in queryset:
+						distance = haversine_distance(lat, lng, report.latitude, report.longitude)
+						if distance <= radius:
+							filtered_reports.append(report)
+					
+					# Return filtered reports as a list (MongoEngine doesn't support id__in with ObjectIds)
+					return filtered_reports
+					
+				except (ValueError, TypeError):
+					# If invalid coordinates, return all reports
+					pass
+			
+			return queryset
+		except Exception as e:
+			# Log the error and return empty queryset
+			print(f"Error in ReportsListView.get_queryset(): {e}")
+			return DisasterReport.objects.none()
+	
+	def list(self, request, *args, **kwargs):
+		"""Override list method to handle errors gracefully and return proper format."""
+		try:
+			response = super().list(request, *args, **kwargs)
+			# Ensure the response has the correct format for frontend
+			if hasattr(response, 'data'):
+				# If pagination is used, the data will have 'results' and 'count'
+				# If no pagination, we need to wrap it
+				if 'results' not in response.data:
+					response.data = {
+						'results': response.data if isinstance(response.data, list) else [],
+						'count': len(response.data) if isinstance(response.data, list) else 0,
+						'next': None,
+						'previous': None
+					}
+			return response
+		except Exception as e:
+			print(f"Error in ReportsListView.list(): {e}")
+			return Response(
+				{
+					'results': [],
+					'count': 0,
+					'next': None,
+					'previous': None,
+					'error': 'Failed to fetch reports'
+				},
+				status=status.HTTP_500_INTERNAL_SERVER_ERROR
+			)
 
 
 class ReportDetailView(RetrieveAPIView):
@@ -244,6 +278,40 @@ def health_check_view(request):
 		'timestamp': timezone.now().isoformat(),
 		'service': 'Disaster Response API'
 	})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def simple_reports_view(request):
+	"""
+	Simple reports endpoint that returns basic data without pagination.
+	"""
+	try:
+		# Get all reports
+		reports = DisasterReport.objects.all()[:50]  # Limit to 50 reports
+		
+		# Serialize the reports
+		serializer = DisasterReportSerializer(reports, many=True)
+		
+		return Response({
+			'results': serializer.data,
+			'count': len(serializer.data),
+			'next': None,
+			'previous': None
+		})
+		
+	except Exception as e:
+		print(f"Error in simple_reports_view: {e}")
+		return Response(
+			{
+				'results': [],
+				'count': 0,
+				'next': None,
+				'previous': None,
+				'error': 'Failed to fetch reports'
+			},
+			status=status.HTTP_500_INTERNAL_SERVER_ERROR
+		)
 
 
 @api_view(['GET'])

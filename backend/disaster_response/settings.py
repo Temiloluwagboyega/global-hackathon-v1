@@ -1,16 +1,23 @@
 import os
 from pathlib import Path
 from decouple import config
+import mongoengine
 
-# Base directory
+# -----------------------------
+# Base Directory
+# -----------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY
+# -----------------------------
+# Security & Debug
+# -----------------------------
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost').split(',')
 
-# Application definition
+# -----------------------------
+# Installed Apps
+# -----------------------------
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -18,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'rest_framework',
     'corsheaders',
     'drf_spectacular',
@@ -26,8 +34,11 @@ INSTALLED_APPS = [
     'reports',
 ]
 
+# -----------------------------
+# Middleware
+# -----------------------------
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # Must be first
+    'corsheaders.middleware.CorsMiddleware',  # must be first
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -38,6 +49,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# -----------------------------
+# URL and Templates
+# -----------------------------
 ROOT_URLCONF = 'disaster_response.urls'
 
 TEMPLATES = [
@@ -57,12 +71,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'disaster_response.wsgi.application'
 
+# -----------------------------
 # MongoDB (MongoEngine)
-import mongoengine
+# -----------------------------
 try:
     mongoengine.connect(
-        host=config('MONGODB_URI'),
         db=config('MONGODB_NAME'),
+        host=config('MONGODB_URI'),
         serverSelectionTimeoutMS=10000,
         connectTimeoutMS=20000,
         socketTimeoutMS=30000,
@@ -74,10 +89,11 @@ try:
     print("✅ MongoDB connected successfully")
 except Exception as e:
     print(f"❌ MongoDB connection failed: {e}")
-    # In production, you might want to raise this error
-    # raise e
+    raise e  # Stop app if DB connection fails
 
-# Keep Django's default database for admin and auth
+# -----------------------------
+# Default Django DB (for admin/auth)
+# -----------------------------
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -85,28 +101,31 @@ DATABASES = {
     }
 }
 
-CONN_MAX_AGE = 60
-
+# -----------------------------
 # Password validation
+# -----------------------------
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# -----------------------------
 # Internationalization
+# -----------------------------
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+# -----------------------------
+# Static & Media files
+# -----------------------------
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files (Cloudinary)
 MEDIA_URL = config('MEDIA_URL', default='/media/')
 MEDIA_ROOT = BASE_DIR / config('MEDIA_ROOT', default='media')
 
@@ -117,18 +136,19 @@ CLOUDINARY_STORAGE = {
 }
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
+# -----------------------------
 # CORS
+# -----------------------------
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
     CORS_ALLOW_CREDENTIALS = True
 else:
-    CORS_ALLOWED_ORIGINS = config(
-        'CORS_ALLOWED_ORIGINS',
-        default='http://localhost:5173,http://localhost:3000'
-    ).split(',')
+    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS').split(',')
     CORS_ALLOW_CREDENTIALS = True
 
+# -----------------------------
 # Django REST Framework
+# -----------------------------
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 50,
@@ -139,17 +159,11 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle',
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/hour',
-        'user': '1000/hour',
-    }
 }
 
+# -----------------------------
 # API Documentation
+# -----------------------------
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Disaster Response API',
     'DESCRIPTION': 'API for reporting and managing disaster incidents',
@@ -159,11 +173,15 @@ SPECTACULAR_SETTINGS = {
     'SCHEMA_PATH_PREFIX': '/api/',
 }
 
-# File upload limits
+# -----------------------------
+# Upload limits
+# -----------------------------
 FILE_UPLOAD_MAX_MEMORY_SIZE = config('MAX_UPLOAD_SIZE', default=10485760, cast=int)
 DATA_UPLOAD_MAX_MEMORY_SIZE = config('MAX_UPLOAD_SIZE', default=10485760, cast=int)
 
-# Production security settings
+# -----------------------------
+# Production security
+# -----------------------------
 if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -171,9 +189,11 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    # SECURE_SSL_REDIRECT = True  # Disabled for now - causing issues
-    SESSION_COOKIE_SECURE = False  # Allow HTTP for now
-    CSRF_COOKIE_SECURE = False     # Allow HTTP for now
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
 
-# Default primary key field type
+# -----------------------------
+# Default primary key
+# -----------------------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
