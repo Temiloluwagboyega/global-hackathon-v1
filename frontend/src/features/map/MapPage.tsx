@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { Navbar } from '../../components/layout/Navbar'
 import { DisasterMap } from '../../components/map/DisasterMap'
-import { LiveFeed } from '../../components/layout/LiveFeed'
+import { ResponsiveLiveFeed } from '../../components/layout/ResponsiveLiveFeed'
 import { AlertBanner } from '../../components/layout/AlertBanner'
 import { FloatingAISummary } from '../../components/layout/FloatingAISummary'
 import { Modal } from '../../components/ui/Modal'
@@ -27,6 +27,7 @@ const MapPageContent = () => {
 	const [showReportForm, setShowReportForm] = useState(false)
 	const [selectedReport, setSelectedReport] = useState<DisasterReport | null>(null)
 	const [selectedLocation, setSelectedLocation] = useState<Coordinates | null>(null)
+	const [mapCenter, setMapCenter] = useState<Coordinates>({ lat: 6.5244, lng: 3.3792 }) // Lagos default
 
 	const { data: reportsData, isLoading } = useReports()
 	const { location: userLocation, getCurrentPosition } = useGeolocation()
@@ -40,6 +41,8 @@ const MapPageContent = () => {
 
 	const handleReportClick = (report: DisasterReport) => {
 		setSelectedReport(report)
+		// Center map on the selected report
+		setMapCenter(report.location)
 	}
 
 	const handleReportSuccess = () => {
@@ -66,6 +69,7 @@ const MapPageContent = () => {
 						userLocation={userLocation}
 						onMapClick={handleMapClick}
 						selectedReport={selectedReport}
+						center={mapCenter}
 						className="h-full"
 					/>
 
@@ -79,14 +83,12 @@ const MapPageContent = () => {
 					</button>
 				</div>
 
-				{/* Live Feed Sidebar */}
-				<div className="w-80 border-l border-gray-200 bg-white">
-					<LiveFeed
-						userLocation={userLocation}
-						onReportClick={handleReportClick}
-						className="h-full"
-					/>
-				</div>
+				{/* Responsive Live Feed Sidebar */}
+				<ResponsiveLiveFeed
+					userLocation={userLocation}
+					onReportClick={handleReportClick}
+					className="h-full"
+				/>
 			</div>
 
 			{/* Alert Banner */}

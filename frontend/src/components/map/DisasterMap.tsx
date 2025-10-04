@@ -19,6 +19,7 @@ interface DisasterMapProps {
 	userLocation: Coordinates | null
 	onMapClick?: (coordinates: Coordinates) => void
 	selectedReport?: DisasterReport | null
+	center?: Coordinates
 	className?: string
 }
 
@@ -62,21 +63,28 @@ export const DisasterMap = ({
 	userLocation, 
 	onMapClick, 
 	selectedReport,
+	center,
 	className 
 }: DisasterMapProps) => {
-	const [mapCenter, setMapCenter] = useState<Coordinates>({ lat: 6.5244, lng: 3.3792 }) // Lagos default
+	const [mapCenter, setMapCenter] = useState<Coordinates>(center || { lat: 6.5244, lng: 3.3792 }) // Lagos default
 
 	useEffect(() => {
-		if (userLocation) {
+		if (center) {
+			setMapCenter(center)
+		}
+	}, [center])
+
+	useEffect(() => {
+		if (userLocation && !center) {
 			setMapCenter(userLocation)
 		}
-	}, [userLocation])
+	}, [userLocation, center])
 
 	useEffect(() => {
-		if (selectedReport) {
+		if (selectedReport && !center) {
 			setMapCenter(selectedReport.location)
 		}
-	}, [selectedReport])
+	}, [selectedReport, center])
 
 	const getMarkerColor = (type: DisasterReport['type']) => {
 		const colors = {

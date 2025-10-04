@@ -54,6 +54,17 @@
 	.leaflet-popup-pane {
 		z-index: 4;
 	}
+	
+	/* Mobile responsive fixes */
+	@media (max-width: 768px) {
+		.leaflet-control-zoom {
+			display: none;
+		}
+		
+		.leaflet-popup-content-wrapper {
+			max-width: 280px;
+		}
+	}
 }
 
 @layer components {
