@@ -4,6 +4,10 @@
 
 echo "Starting Disaster Response API..."
 
+# Check Python version
+echo "Python version:"
+python --version
+
 # Run migrations (fake for MongoDB with djongo)
 echo "Running migrations..."
 python manage.py migrate --fake
