@@ -74,8 +74,12 @@ WSGI_APPLICATION = 'disaster_response.wsgi.application'
 # -----------------------------
 # MongoDB (MongoEngine)
 # -----------------------------
+# MongoDB connection with multiple fallback strategies
+mongodb_connected = False
+connection_errors = []
+
+# Strategy 1: Default connection (let MongoDB handle SSL automatically)
 try:
-    # Try connection with minimal SSL settings first
     mongoengine.connect(
         db=config('MONGODB_NAME'),
         host=config('MONGODB_URI'),
@@ -85,10 +89,14 @@ try:
         maxPoolSize=10,
         retryWrites=True,
     )
-    print("✅ MongoDB connected successfully")
+    print("✅ MongoDB connected successfully (default settings)")
+    mongodb_connected = True
 except Exception as e:
-    print(f"❌ MongoDB connection failed: {e}")
-    # Try with explicit SSL settings
+    connection_errors.append(f"Default connection failed: {e}")
+    print(f"❌ MongoDB default connection failed: {e}")
+
+# Strategy 2: Explicit TLS settings
+if not mongodb_connected:
     try:
         mongoengine.connect(
             db=config('MONGODB_NAME'),
@@ -102,27 +110,55 @@ except Exception as e:
             tlsAllowInvalidCertificates=True,
             tlsAllowInvalidHostnames=True,
         )
-        print("✅ MongoDB connected successfully (with TLS settings)")
-    except Exception as e2:
-        print(f"❌ MongoDB TLS connection also failed: {e2}")
-        # Try with SSL settings
-        try:
-            mongoengine.connect(
-                db=config('MONGODB_NAME'),
-                host=config('MONGODB_URI'),
-                serverSelectionTimeoutMS=30000,
-                connectTimeoutMS=30000,
-                socketTimeoutMS=30000,
-                maxPoolSize=10,
-                retryWrites=True,
-                ssl=True,
-                ssl_cert_reqs=0,  # ssl.CERT_NONE
-            )
-            print("✅ MongoDB connected successfully (with SSL settings)")
-        except Exception as e3:
-            print(f"❌ MongoDB SSL connection also failed: {e3}")
-            # Don't raise error in production to allow app to start
-            # raise e3
+        print("✅ MongoDB connected successfully (TLS settings)")
+        mongodb_connected = True
+    except Exception as e:
+        connection_errors.append(f"TLS connection failed: {e}")
+        print(f"❌ MongoDB TLS connection failed: {e}")
+
+# Strategy 3: SSL settings
+if not mongodb_connected:
+    try:
+        mongoengine.connect(
+            db=config('MONGODB_NAME'),
+            host=config('MONGODB_URI'),
+            serverSelectionTimeoutMS=30000,
+            connectTimeoutMS=30000,
+            socketTimeoutMS=30000,
+            maxPoolSize=10,
+            retryWrites=True,
+            ssl=True,
+            ssl_cert_reqs=0,  # ssl.CERT_NONE
+        )
+        print("✅ MongoDB connected successfully (SSL settings)")
+        mongodb_connected = True
+    except Exception as e:
+        connection_errors.append(f"SSL connection failed: {e}")
+        print(f"❌ MongoDB SSL connection failed: {e}")
+
+# Strategy 4: Minimal settings for production
+if not mongodb_connected:
+    try:
+        mongoengine.connect(
+            db=config('MONGODB_NAME'),
+            host=config('MONGODB_URI'),
+            serverSelectionTimeoutMS=60000,
+            connectTimeoutMS=60000,
+            socketTimeoutMS=60000,
+            maxPoolSize=5,
+            retryWrites=False,
+        )
+        print("✅ MongoDB connected successfully (minimal settings)")
+        mongodb_connected = True
+    except Exception as e:
+        connection_errors.append(f"Minimal connection failed: {e}")
+        print(f"❌ MongoDB minimal connection failed: {e}")
+
+if not mongodb_connected:
+    print("❌ All MongoDB connection strategies failed!")
+    print("Connection errors:", connection_errors)
+    # Don't raise error in production to allow app to start
+    # raise Exception("MongoDB connection failed")
 
 # -----------------------------
 # Default Django DB (for admin/auth)

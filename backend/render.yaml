@@ -3,7 +3,7 @@ services:
     name: disaster-response-api
     plan: free
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: ./start.sh
     envVars:
       - key: SECRET_KEY
@@ -28,3 +28,5 @@ services:
         value: "10485760"
       - key: DATA_UPLOAD_MAX_MEMORY_SIZE
         value: "10485760"
+      - key: PYTHONUNBUFFERED
+        value: "1"
