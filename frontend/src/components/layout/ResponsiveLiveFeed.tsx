@@ -157,30 +157,37 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 						</div>
 						
 						{/* Radius Filter */}
-						{userLocation && (
-							<div className="mb-4">
-								<div className="flex items-center gap-2 mb-2">
-									<MapPin className="h-4 w-4 text-gray-600" />
-									<h4 className="text-sm font-medium text-gray-700">Distance from you</h4>
-								</div>
-								<div className="grid grid-cols-3 gap-2">
-									{[5, 10, 25].map((radius) => (
-										<button
-											key={radius}
-											onClick={() => setRadiusFilter(radiusFilter === radius ? null : radius)}
-											className={cn(
-												'px-3 py-2 text-xs rounded transition-colors',
-												radiusFilter === radius
-													? 'bg-blue-100 text-blue-800 border border-blue-300'
-													: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-											)}
-										>
-											{radius} km
-										</button>
-									))}
-								</div>
+						<div className="mb-4">
+							<div className="flex items-center gap-2 mb-2">
+								<MapPin className="h-4 w-4 text-gray-600" />
+								<h4 className="text-sm font-medium text-gray-700">
+									{userLocation ? 'Distance from you' : 'Filter by radius'}
+								</h4>
 							</div>
-						)}
+							{!userLocation && (
+								<p className="text-xs text-gray-500 mb-2">
+									Enable location access to filter by distance from your current location
+								</p>
+							)}
+							<div className="grid grid-cols-3 gap-2">
+								{[5, 10, 25].map((radius) => (
+									<button
+										key={radius}
+										onClick={() => setRadiusFilter(radiusFilter === radius ? null : radius)}
+										disabled={!userLocation}
+										className={cn(
+											'px-3 py-2 text-xs rounded transition-colors',
+											!userLocation && 'opacity-50 cursor-not-allowed',
+											radiusFilter === radius
+												? 'bg-blue-100 text-blue-800 border border-blue-300'
+												: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+										)}
+									>
+										{radius} km
+									</button>
+								))}
+							</div>
+						</div>
 						
 						{/* Type Filter */}
 						<div>

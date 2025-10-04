@@ -55,14 +55,24 @@ export const getStatusColor = (status: 'active' | 'resolved' | 'investigating'):
  * Format timestamp for display
  */
 export const formatTimestamp = (timestamp: string): string => {
-	// Handle timestamp format with microseconds (e.g., '2025-10-04T21:49:33.066000')
-	// Convert to standard ISO format by truncating microseconds to milliseconds
+	// Handle various timestamp formats:
+	// 1. With microseconds and timezone: '2025-10-04T23:02:57.654549+00:00'
+	// 2. With microseconds only: '2025-10-04T21:49:33.066000'
+	// 3. Standard ISO: '2025-10-04T21:49:33.066Z'
+	
 	let normalizedTimestamp = timestamp
-	if (timestamp.includes('.') && timestamp.split('.')[1].length > 3) {
-		// Truncate microseconds to milliseconds (keep only first 3 digits after decimal)
-		const parts = timestamp.split('.')
+	
+	// Remove timezone if present and handle microseconds
+	if (timestamp.includes('+') || timestamp.endsWith('Z')) {
+		// Remove timezone part
+		normalizedTimestamp = timestamp.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '')
+	}
+	
+	// Handle microseconds (more than 3 digits after decimal point)
+	if (normalizedTimestamp.includes('.') && normalizedTimestamp.split('.')[1].length > 3) {
+		const parts = normalizedTimestamp.split('.')
 		const seconds = parts[0]
-		const microseconds = parts[1].substring(0, 3) // Keep only first 3 digits
+		const microseconds = parts[1].substring(0, 3) // Keep only first 3 digits (milliseconds)
 		normalizedTimestamp = `${seconds}.${microseconds}`
 	}
 	
@@ -71,7 +81,7 @@ export const formatTimestamp = (timestamp: string): string => {
 	
 	// Check if date is valid
 	if (isNaN(date.getTime())) {
-		console.warn('Invalid timestamp:', timestamp)
+		console.warn('Invalid timestamp:', timestamp, 'normalized:', normalizedTimestamp)
 		return 'Unknown time'
 	}
 	
