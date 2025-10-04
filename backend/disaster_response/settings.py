@@ -78,7 +78,7 @@ WSGI_APPLICATION = 'disaster_response.wsgi.application'
 mongodb_connected = False
 connection_errors = []
 
-# Strategy 1: Connection with SSL parameters in URI
+on # Strategy 1: Connection with SSL parameters in URI
 try:
     # Modify URI to include SSL parameters
     mongodb_uri = config('MONGODB_URI')

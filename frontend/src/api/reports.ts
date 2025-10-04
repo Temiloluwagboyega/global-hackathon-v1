@@ -60,9 +60,17 @@ export const reportsApi = {
 	},
 
 	// Update report status
-	updateReportStatus: async (reportId: string, status: 'active' | 'resolved' | 'investigating'): Promise<void> => {
+	updateReportStatus: async (
+		reportId: string, 
+		status: 'active' | 'resolved' | 'investigating',
+		reporterId: string
+	): Promise<{ success: boolean; report?: any; error?: string }> => {
 		try {
-			await apiClient.patch(`/reports/${reportId}/status/`, { status })
+			const response = await apiClient.patch(`/reports/${reportId}/status/`, { 
+				status,
+				reporter_id: reporterId
+			})
+			return response.data
 		} catch (error) {
 			throw new Error(handleApiError(error))
 		}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { Navbar } from '../../components/layout/Navbar'
@@ -17,11 +17,20 @@ const MapPage = () => {
 	const [selectedReport, setSelectedReport] = useState<DisasterReport | null>(null)
 	const [selectedLocation, setSelectedLocation] = useState<Coordinates | null>(null)
 	const [mapCenter, setMapCenter] = useState<Coordinates>({ lat: 6.5244, lng: 3.3792 }) // Lagos default
+	const [mapZoom, setMapZoom] = useState(13)
 
 	const { data: reportsData } = useReports()
 	const { location: userLocation } = useGeolocation()
 
 	const reports = reportsData?.reports || []
+
+	// Set map to user location on page load
+	useEffect(() => {
+		if (userLocation && !selectedReport) {
+			setMapCenter(userLocation)
+			setMapZoom(15) // Zoom in more when showing user location
+		}
+	}, [userLocation, selectedReport])
 
 	const handleMapClick = (coordinates: Coordinates) => {
 		setSelectedLocation(coordinates)
@@ -30,8 +39,9 @@ const MapPage = () => {
 
 	const handleReportClick = (report: DisasterReport) => {
 		setSelectedReport(report)
-		// Center map on the selected report
+		// Center map on the selected report with smooth transition
 		setMapCenter(report.location)
+		setMapZoom(15) // Zoom in when viewing a specific report
 	}
 
 	const handleReportSuccess = () => {
@@ -59,6 +69,7 @@ const MapPage = () => {
 						onMapClick={handleMapClick}
 						selectedReport={selectedReport}
 						center={mapCenter}
+						zoom={mapZoom}
 						className="h-full"
 					/>
 

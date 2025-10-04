@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
+import { useEffect, useState, useRef } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet'
 import { Icon } from 'leaflet'
 import L from 'leaflet'
 import type { DisasterReport, Coordinates } from '../../types'
@@ -20,6 +20,7 @@ interface DisasterMapProps {
 	onMapClick?: (coordinates: Coordinates) => void
 	selectedReport?: DisasterReport | null
 	center?: Coordinates
+	zoom?: number
 	className?: string
 }
 
@@ -58,12 +59,47 @@ const MapClickHandler = ({ onMapClick }: { onMapClick?: (coordinates: Coordinate
 	return null
 }
 
+// Component to handle smooth map transitions
+const MapTransitionHandler = ({ 
+	center, 
+	zoom = 15, 
+	duration = 1000 
+}: { 
+	center?: Coordinates
+	zoom?: number
+	duration?: number
+}) => {
+	const map = useMap()
+	const previousCenter = useRef<Coordinates | null>(null)
+
+	useEffect(() => {
+		if (center && map) {
+			// Only animate if the center has actually changed
+			if (!previousCenter.current || 
+				previousCenter.current.lat !== center.lat || 
+				previousCenter.current.lng !== center.lng) {
+				
+				// Smooth fly to the new location
+				map.flyTo([center.lat, center.lng], zoom, {
+					duration: duration / 1000, // Convert to seconds
+					easeLinearity: 0.1,
+				})
+				
+				previousCenter.current = center
+			}
+		}
+	}, [center, zoom, duration, map])
+
+	return null
+}
+
 export const DisasterMap = ({ 
 	reports, 
 	userLocation, 
 	onMapClick, 
 	selectedReport,
 	center,
+	zoom = 13,
 	className 
 }: DisasterMapProps) => {
 	const [mapCenter, setMapCenter] = useState<Coordinates>(center || { lat: 6.5244, lng: 3.3792 }) // Lagos default
@@ -100,13 +136,20 @@ export const DisasterMap = ({
 		<div className={cn('w-full h-full', className)}>
 			<MapContainer
 				center={mapCenter}
-				zoom={13}
+				zoom={zoom}
 				className="w-full h-full"
 				zoomControl={true}
 			>
 				<TileLayer
 					attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 					url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+				/>
+				
+				{/* Map transition handler for smooth animations */}
+				<MapTransitionHandler 
+					center={center || selectedReport?.location} 
+					zoom={center || selectedReport ? 15 : zoom}
+					duration={1000}
 				/>
 				
 				{/* User location marker */}

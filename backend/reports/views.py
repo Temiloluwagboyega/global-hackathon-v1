@@ -179,7 +179,7 @@ class CreateReportView(CreateAPIView):
 
 class UpdateReportStatusView(UpdateAPIView):
 	"""
-	API view to update report status.
+	API view to update report status with reporter ID validation.
 	"""
 	serializer_class = UpdateReportStatusSerializer
 	permission_classes = [AllowAny]
@@ -198,13 +198,40 @@ class UpdateReportStatusView(UpdateAPIView):
 	def update(self, request, *args, **kwargs):
 		partial = kwargs.pop('partial', False)
 		instance = self.get_object()
+		
+		# Get reporter ID from request data (required for authorization)
+		request_reporter_id = request.data.get('reporter_id')
+		
+		# Validate that reporter_id is provided
+		if not request_reporter_id:
+			return Response({
+				'success': False, 
+				'error': 'reporter_id is required for status updates'
+			}, status=status.HTTP_400_BAD_REQUEST)
+		
+		# Validate that the reporter ID matches the report's reporter ID
+		if instance.reporter_id and instance.reporter_id != request_reporter_id:
+			return Response({
+				'success': False, 
+				'error': 'Unauthorized: Only the original reporter can update this report'
+			}, status=status.HTTP_403_FORBIDDEN)
+		
 		serializer = self.get_serializer(instance, data=request.data, partial=partial)
 		
 		if serializer.is_valid():
 			serializer.save()
-			return Response({'success': True}, status=status.HTTP_200_OK)
+			# Return the updated report data
+			response_serializer = DisasterReportSerializer(instance)
+			return Response({
+				'success': True,
+				'report': response_serializer.data
+			}, status=status.HTTP_200_OK)
 		
-		return Response({'success': False, 'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+		return Response({
+			'success': False, 
+			'error': 'Invalid status',
+			'errors': serializer.errors
+		}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])

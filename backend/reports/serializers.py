@@ -60,6 +60,11 @@ class DisasterReportSerializer(MongoEngineSerializer):
 	def to_representation(self, instance):
 		"""Customize the representation to match frontend expectations."""
 		data = super().to_representation(instance)
+		
+		# Ensure all required fields are present
+		data['description'] = instance.description
+		data['status'] = instance.status
+		
 		# Map disaster_type to type for frontend compatibility
 		data['type'] = instance.disaster_type
 		
@@ -81,6 +86,8 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 	latitude = serializers.FloatField(write_only=True)
 	longitude = serializers.FloatField(write_only=True)
 	type = serializers.CharField(source='disaster_type', write_only=True)
+	description = serializers.CharField()
+	reporter_id = serializers.CharField()
 	
 	class Meta:
 		model = DisasterReport
@@ -117,6 +124,7 @@ class UpdateReportStatusSerializer(MongoEngineSerializer):
 	"""
 	Serializer for updating report status.
 	"""
+	status = serializers.CharField()
 	
 	class Meta:
 		model = DisasterReport
@@ -128,6 +136,12 @@ class UpdateReportStatusSerializer(MongoEngineSerializer):
 		if value not in valid_statuses:
 			raise serializers.ValidationError(f'Invalid status. Must be one of: {", ".join(valid_statuses)}')
 		return value
+	
+	def update(self, instance, validated_data):
+		"""Update the instance with validated data."""
+		instance.status = validated_data.get('status', instance.status)
+		instance.save()
+		return instance
 
 
 class AISummarySerializer(serializers.Serializer):

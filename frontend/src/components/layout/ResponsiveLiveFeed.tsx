@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Filter, X, List } from 'lucide-react'
+import { RefreshCw, Filter, X, List, MapPin } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { DisasterCard } from '../map/DisasterCard'
 import { useReports } from '../../hooks/api/useReports'
@@ -19,15 +19,44 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 	const [selectedTypes, setSelectedTypes] = useState<DisasterType[]>([])
 	const [showFilters, setShowFilters] = useState(false)
 	const [isOpen, setIsOpen] = useState(false)
+	const [radiusFilter, setRadiusFilter] = useState<number | null>(null)
 	
 	const { data: reportsData, isLoading, error, refetch, isFetching } = useReports()
 
 	const reports = (reportsData as any)?.reports || []
 
-	// Filter reports by selected types
-	const filteredReports = selectedTypes.length > 0 
-		? reports.filter((report: any) => selectedTypes.includes(report.type))
-		: reports
+	// Calculate distance between two points in kilometers
+	const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+		const R = 6371 // Earth's radius in kilometers
+		const dLat = (lat2 - lat1) * Math.PI / 180
+		const dLng = (lng2 - lng1) * Math.PI / 180
+		const a = 
+			Math.sin(dLat/2) * Math.sin(dLat/2) +
+			Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+			Math.sin(dLng/2) * Math.sin(dLng/2)
+		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+		return R * c
+	}
+
+	// Filter reports by selected types and radius
+	const filteredReports = reports.filter((report: any) => {
+		// Type filter
+		const typeMatch = selectedTypes.length === 0 || selectedTypes.includes(report.type)
+		
+		// Radius filter
+		let radiusMatch = true
+		if (radiusFilter && userLocation) {
+			const distance = calculateDistance(
+				userLocation.lat, 
+				userLocation.lng, 
+				report.location.lat, 
+				report.location.lng
+			)
+			radiusMatch = distance <= radiusFilter
+		}
+		
+		return typeMatch && radiusMatch
+	})
 
 	const toggleTypeFilter = (type: DisasterType) => {
 		setSelectedTypes(prev => 
@@ -39,6 +68,7 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 
 	const clearFilters = () => {
 		setSelectedTypes([])
+		setRadiusFilter(null)
 	}
 
 	const getTypeCount = (type: DisasterType) => {
@@ -102,6 +132,9 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 						) : (
 							<>
 								{filteredReports.length} of {reports.length} reports
+								{(selectedTypes.length > 0 || radiusFilter) && (
+									<span className="ml-1 text-blue-600">(filtered)</span>
+								)}
 								{isFetching && <span className="ml-2 text-blue-600">Updating...</span>}
 							</>
 						)}
@@ -112,8 +145,8 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 				{showFilters && (
 					<div className="p-4 border-b border-gray-200 bg-gray-50">
 						<div className="flex items-center justify-between mb-3">
-							<h3 className="text-sm font-medium text-gray-700">Filter by Type</h3>
-							{selectedTypes.length > 0 && (
+							<h3 className="text-sm font-medium text-gray-700">Filters</h3>
+							{(selectedTypes.length > 0 || radiusFilter) && (
 								<button
 									onClick={clearFilters}
 									className="text-xs text-gray-600 hover:text-gray-800"
@@ -123,32 +156,62 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 							)}
 						</div>
 						
-						<div className="grid grid-cols-2 gap-2">
-							{disasterTypes.map((type) => {
-								const count = getTypeCount(type)
-								const isSelected = selectedTypes.includes(type)
-								
-								return (
-									<button
-										key={type}
-										onClick={() => toggleTypeFilter(type)}
-									className={cn(
-										'flex items-center justify-between p-2 rounded text-sm transition-colors',
-										isSelected
-											? 'bg-gray-100 text-gray-800 border border-gray-300'
-											: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-									)}
-									>
-										<span>{getDisasterDisplayName(type)}</span>
-										<span className={cn(
-											'text-xs px-1.5 py-0.5 rounded',
-											isSelected ? 'bg-gray-200' : 'bg-gray-100'
-										)}>
-											{count}
-										</span>
-									</button>
-								)
-							})}
+						{/* Radius Filter */}
+						{userLocation && (
+							<div className="mb-4">
+								<div className="flex items-center gap-2 mb-2">
+									<MapPin className="h-4 w-4 text-gray-600" />
+									<h4 className="text-sm font-medium text-gray-700">Distance from you</h4>
+								</div>
+								<div className="grid grid-cols-3 gap-2">
+									{[5, 10, 25].map((radius) => (
+										<button
+											key={radius}
+											onClick={() => setRadiusFilter(radiusFilter === radius ? null : radius)}
+											className={cn(
+												'px-3 py-2 text-xs rounded transition-colors',
+												radiusFilter === radius
+													? 'bg-blue-100 text-blue-800 border border-blue-300'
+													: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+											)}
+										>
+											{radius} km
+										</button>
+									))}
+								</div>
+							</div>
+						)}
+						
+						{/* Type Filter */}
+						<div>
+							<h4 className="text-sm font-medium text-gray-700 mb-2">Disaster Type</h4>
+							<div className="grid grid-cols-2 gap-2">
+								{disasterTypes.map((type) => {
+									const count = getTypeCount(type)
+									const isSelected = selectedTypes.includes(type)
+									
+									return (
+										<button
+											key={type}
+											onClick={() => toggleTypeFilter(type)}
+										className={cn(
+											'flex items-center justify-between p-2 rounded text-sm transition-colors',
+											isSelected
+												? 'bg-gray-100 text-gray-800 border border-gray-300'
+												: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+										)}
+										>
+											<span>{getDisasterDisplayName(type)}</span>
+											<span className={cn(
+												'text-xs px-1.5 py-0.5 rounded',
+												isSelected ? 'bg-gray-200' : 'bg-gray-100'
+											)}>
+												{count}
+											</span>
+										</button>
+									)
+								})}
+							</div>
 						</div>
 					</div>
 				)}
@@ -233,6 +296,9 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 						) : (
 							<>
 								{filteredReports.length} of {reports.length} reports
+								{(selectedTypes.length > 0 || radiusFilter) && (
+									<span className="ml-1 text-blue-600">(filtered)</span>
+								)}
 								{isFetching && <span className="ml-2 text-blue-600">Updating...</span>}
 							</>
 						)}

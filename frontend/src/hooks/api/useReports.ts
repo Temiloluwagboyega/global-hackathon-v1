@@ -67,26 +67,6 @@ export const useAISummary = () => {
 }
 
 // Hook to update report status
-export const useUpdateReportStatus = () => {
-	const queryClient = useQueryClient()
-
-	return useMutation({
-		mutationFn: ({ 
-			reportId, 
-			status 
-		}: { 
-			reportId: string
-			status: 'active' | 'resolved' | 'investigating' 
-		}) => reportsApi.updateReportStatus(reportId, status),
-		onSuccess: () => {
-			// Invalidate and refetch reports
-			queryClient.invalidateQueries({ queryKey: queryKeys.reports })
-		},
-		onError: (error) => {
-			console.error('Failed to update report status:', error)
-		},
-	})
-}
 
 // Hook to get reporter ID (session-based)
 export const useReporterId = () => {
@@ -110,5 +90,29 @@ export const useHealthCheck = () => {
 		gcTime: 2 * 60 * 1000, // Keep in cache for 2 minutes
 		retry: 1,
 		refetchOnWindowFocus: true,
+	})
+}
+
+// Hook for updating report status
+export const useUpdateReportStatus = () => {
+	const queryClient = useQueryClient()
+	
+	return useMutation({
+		mutationFn: ({ 
+			reportId, 
+			status, 
+			reporterId 
+		}: { 
+			reportId: string
+			status: 'active' | 'resolved' | 'investigating'
+			reporterId: string
+		}) => reportsApi.updateReportStatus(reportId, status, reporterId),
+		onSuccess: () => {
+			// Invalidate and refetch reports data
+			queryClient.invalidateQueries({ queryKey: queryKeys.reports })
+		},
+		onError: (error) => {
+			console.error('Failed to update report status:', error)
+		},
 	})
 }

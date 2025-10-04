@@ -1,6 +1,8 @@
-import { MapPin, Clock, Eye } from 'lucide-react'
+import { MapPin, Clock, Eye, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
 import { cn } from '../../utils/cn'
 import { getDisasterEmoji, getDisasterDisplayName, getStatusColor, formatTimestamp, formatDistance } from '../../utils'
+import { useReporterId, useUpdateReportStatus } from '../../hooks/api/useReports'
 import type { DisasterReport } from '../../types'
 
 interface DisasterCardProps {
@@ -11,12 +13,58 @@ interface DisasterCardProps {
 }
 
 export const DisasterCard = ({ report, userLocation, onClick, className }: DisasterCardProps) => {
+	const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+	const dropdownRef = useRef<HTMLDivElement>(null)
+	const { data: reporterData } = useReporterId()
+	const updateStatusMutation = useUpdateReportStatus()
+	
+	const currentReporterId = reporterData?.reporter_id
+	const isOwner = currentReporterId && report.reporterId === currentReporterId
+
+	// Close dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+				setShowStatusDropdown(false)
+			}
+		}
+
+		if (showStatusDropdown) {
+			document.addEventListener('mousedown', handleClickOutside)
+		}
+
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside)
+		}
+	}, [showStatusDropdown])
+	
 	const distance = userLocation ? 
 		Math.sqrt(
 			Math.pow(report.location.lat - userLocation.lat, 2) +
 			Math.pow(report.location.lng - userLocation.lng, 2)
 		) * 111 // Rough conversion to km
 		: null
+
+	const handleStatusUpdate = async (newStatus: 'active' | 'resolved' | 'investigating') => {
+		if (!currentReporterId) return
+		
+		try {
+			await updateStatusMutation.mutateAsync({
+				reportId: report.id,
+				status: newStatus,
+				reporterId: currentReporterId
+			})
+			setShowStatusDropdown(false)
+		} catch (error) {
+			console.error('Failed to update status:', error)
+		}
+	}
+
+	const statusOptions = [
+		{ value: 'active', label: 'Active', color: 'bg-yellow-100 text-yellow-800' },
+		{ value: 'investigating', label: 'Investigating', color: 'bg-blue-100 text-blue-800' },
+		{ value: 'resolved', label: 'Resolved', color: 'bg-green-100 text-green-800' }
+	]
 
 	return (
 		<div
@@ -34,9 +82,48 @@ export const DisasterCard = ({ report, userLocation, onClick, className }: Disas
 						<h3 className="font-semibold text-gray-900 text-sm">
 							{getDisasterDisplayName(report.type)}
 						</h3>
-						<span className={cn('text-xs px-2 py-1 rounded-full', getStatusColor(report.status))}>
-							{report.status}
-						</span>
+						{isOwner ? (
+							<div className="relative" ref={dropdownRef}>
+								<button
+									onClick={(e) => {
+										e.stopPropagation()
+										setShowStatusDropdown(!showStatusDropdown)
+									}}
+									className={cn(
+										'text-xs px-2 py-1 rounded-full flex items-center gap-1 hover:opacity-80 transition-opacity',
+										getStatusColor(report.status)
+									)}
+									disabled={updateStatusMutation.isPending}
+								>
+									{report.status}
+									<ChevronDown className="h-3 w-3" />
+								</button>
+								
+								{showStatusDropdown && (
+									<div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-[120px]">
+										{statusOptions.map((option) => (
+											<button
+												key={option.value}
+												onClick={(e) => {
+													e.stopPropagation()
+													handleStatusUpdate(option.value as any)
+												}}
+												className={cn(
+													'w-full text-left px-3 py-2 text-xs hover:bg-gray-50 first:rounded-t-md last:rounded-b-md',
+													option.value === report.status && 'bg-gray-100'
+												)}
+											>
+												{option.label}
+											</button>
+										))}
+									</div>
+								)}
+							</div>
+						) : (
+							<span className={cn('text-xs px-2 py-1 rounded-full', getStatusColor(report.status))}>
+								{report.status}
+							</span>
+						)}
 					</div>
 				</div>
 				
