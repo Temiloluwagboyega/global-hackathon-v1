@@ -1,10 +1,6 @@
 import os
-import ssl
 from pathlib import Path
 from decouple import config
-
-# Fix SSL context for MongoDB Atlas
-ssl._create_default_https_context = ssl._create_unverified_context
 
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='disaster-report-map.onrender.com,localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -117,8 +113,7 @@ if DEBUG:
     CORS_ALLOW_CREDENTIALS = True
 else:
     CORS_ALLOWED_ORIGINS = [
-        "https://yourdomain.com",
-        "https://www.yourdomain.com",
+        "https://disaster-report-map.onrender.com",
     ]
     CORS_ALLOW_CREDENTIALS = True
 
