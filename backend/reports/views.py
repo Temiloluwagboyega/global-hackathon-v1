@@ -55,6 +55,8 @@ class ReportsListView(ListAPIView):
 	
 	def get_queryset(self):
 		try:
+			# Test MongoDB connection first
+			DisasterReport.objects.count()  # Simple connection test
 			queryset = DisasterReport.objects.all()
 			
 			# Get query parameters
@@ -86,7 +88,8 @@ class ReportsListView(ListAPIView):
 		except Exception as e:
 			# Log the error and return empty queryset
 			print(f"Error in ReportsListView.get_queryset(): {e}")
-			return DisasterReport.objects.none()
+			# Return empty list instead of queryset to avoid further DB calls
+			return []
 	
 	def list(self, request, *args, **kwargs):
 		"""Override list method to handle errors gracefully and return proper format."""

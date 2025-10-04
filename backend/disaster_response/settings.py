@@ -75,21 +75,54 @@ WSGI_APPLICATION = 'disaster_response.wsgi.application'
 # MongoDB (MongoEngine)
 # -----------------------------
 try:
+    # Try connection with minimal SSL settings first
     mongoengine.connect(
         db=config('MONGODB_NAME'),
         host=config('MONGODB_URI'),
-        serverSelectionTimeoutMS=10000,
-        connectTimeoutMS=20000,
+        serverSelectionTimeoutMS=30000,
+        connectTimeoutMS=30000,
         socketTimeoutMS=30000,
         maxPoolSize=10,
         retryWrites=True,
-        tlsAllowInvalidCertificates=True,
-        tlsAllowInvalidHostnames=True,
     )
     print("✅ MongoDB connected successfully")
 except Exception as e:
     print(f"❌ MongoDB connection failed: {e}")
-    raise e  # Stop app if DB connection fails
+    # Try with explicit SSL settings
+    try:
+        mongoengine.connect(
+            db=config('MONGODB_NAME'),
+            host=config('MONGODB_URI'),
+            serverSelectionTimeoutMS=30000,
+            connectTimeoutMS=30000,
+            socketTimeoutMS=30000,
+            maxPoolSize=10,
+            retryWrites=True,
+            tls=True,
+            tlsAllowInvalidCertificates=True,
+            tlsAllowInvalidHostnames=True,
+        )
+        print("✅ MongoDB connected successfully (with TLS settings)")
+    except Exception as e2:
+        print(f"❌ MongoDB TLS connection also failed: {e2}")
+        # Try with SSL settings
+        try:
+            mongoengine.connect(
+                db=config('MONGODB_NAME'),
+                host=config('MONGODB_URI'),
+                serverSelectionTimeoutMS=30000,
+                connectTimeoutMS=30000,
+                socketTimeoutMS=30000,
+                maxPoolSize=10,
+                retryWrites=True,
+                ssl=True,
+                ssl_cert_reqs=0,  # ssl.CERT_NONE
+            )
+            print("✅ MongoDB connected successfully (with SSL settings)")
+        except Exception as e3:
+            print(f"❌ MongoDB SSL connection also failed: {e3}")
+            # Don't raise error in production to allow app to start
+            # raise e3
 
 # -----------------------------
 # Default Django DB (for admin/auth)
