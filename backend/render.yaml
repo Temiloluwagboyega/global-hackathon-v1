@@ -30,3 +30,5 @@ services:
         value: "10485760"
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: PYTHONHTTPSVERIFY
+        value: "0"

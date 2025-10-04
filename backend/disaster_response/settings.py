@@ -74,12 +74,22 @@ WSGI_APPLICATION = 'disaster_response.wsgi.application'
 # -----------------------------
 # MongoDB (MongoEngine)
 # -----------------------------
-# MongoDB connection with multiple fallback strategies
+# MongoDB connection with Atlas-specific SSL configuration
 mongodb_connected = False
 connection_errors = []
 
-# Strategy 1: Default connection (let MongoDB handle SSL automatically)
+# Strategy 1: Simple connection (let MongoDB handle SSL automatically)
 try:
+    # Set SSL context for production
+    import ssl
+    import os
+    if not os.environ.get('PYTHONHTTPSVERIFY', '1') == '0':
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+    else:
+        ssl_context = None
+    
     mongoengine.connect(
         db=config('MONGODB_NAME'),
         host=config('MONGODB_URI'),
@@ -89,13 +99,44 @@ try:
         maxPoolSize=10,
         retryWrites=True,
     )
-    print("✅ MongoDB connected successfully (default settings)")
+    print("✅ MongoDB connected successfully (simple connection)")
     mongodb_connected = True
 except Exception as e:
-    connection_errors.append(f"Default connection failed: {e}")
-    print(f"❌ MongoDB default connection failed: {e}")
+    connection_errors.append(f"Simple connection failed: {e}")
+    print(f"❌ MongoDB simple connection failed: {e}")
 
-# Strategy 2: Explicit TLS settings
+# Strategy 2: Direct PyMongo connection
+if not mongodb_connected:
+    try:
+        from pymongo import MongoClient
+        
+        # Create direct PyMongo client
+        client = MongoClient(
+            config('MONGODB_URI'),
+            serverSelectionTimeoutMS=30000,
+            connectTimeoutMS=30000,
+            socketTimeoutMS=30000,
+            maxPoolSize=10,
+            retryWrites=True,
+        )
+        
+        # Test connection
+        client.admin.command('ping')
+        
+        # Connect MongoEngine to the existing client
+        mongoengine.connect(
+            db=config('MONGODB_NAME'),
+            _connect=False,  # Don't create new connection
+            mongo_client=client
+        )
+        
+        print("✅ MongoDB connected successfully (direct PyMongo)")
+        mongodb_connected = True
+    except Exception as e:
+        connection_errors.append(f"Direct PyMongo connection failed: {e}")
+        print(f"❌ MongoDB direct PyMongo connection failed: {e}")
+
+# Strategy 3: Atlas-specific TLS settings
 if not mongodb_connected:
     try:
         mongoengine.connect(
@@ -110,33 +151,13 @@ if not mongodb_connected:
             tlsAllowInvalidCertificates=True,
             tlsAllowInvalidHostnames=True,
         )
-        print("✅ MongoDB connected successfully (TLS settings)")
+        print("✅ MongoDB connected successfully (Atlas TLS)")
         mongodb_connected = True
     except Exception as e:
-        connection_errors.append(f"TLS connection failed: {e}")
-        print(f"❌ MongoDB TLS connection failed: {e}")
+        connection_errors.append(f"Atlas TLS connection failed: {e}")
+        print(f"❌ MongoDB Atlas TLS connection failed: {e}")
 
-# Strategy 3: SSL settings
-if not mongodb_connected:
-    try:
-        mongoengine.connect(
-            db=config('MONGODB_NAME'),
-            host=config('MONGODB_URI'),
-            serverSelectionTimeoutMS=30000,
-            connectTimeoutMS=30000,
-            socketTimeoutMS=30000,
-            maxPoolSize=10,
-            retryWrites=True,
-            ssl=True,
-            ssl_cert_reqs=0,  # ssl.CERT_NONE
-        )
-        print("✅ MongoDB connected successfully (SSL settings)")
-        mongodb_connected = True
-    except Exception as e:
-        connection_errors.append(f"SSL connection failed: {e}")
-        print(f"❌ MongoDB SSL connection failed: {e}")
-
-# Strategy 4: Minimal settings for production
+# Strategy 4: Minimal settings
 if not mongodb_connected:
     try:
         mongoengine.connect(
