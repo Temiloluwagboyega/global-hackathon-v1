@@ -78,32 +78,47 @@ WSGI_APPLICATION = 'disaster_response.wsgi.application'
 mongodb_connected = False
 connection_errors = []
 
-# Strategy 1: Simple connection (let MongoDB handle SSL automatically)
+# Strategy 1: Connection with SSL parameters in URI
 try:
-    # Set SSL context for production
-    import ssl
-    import os
-    if not os.environ.get('PYTHONHTTPSVERIFY', '1') == '0':
-        ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
+    # Modify URI to include SSL parameters
+    mongodb_uri = config('MONGODB_URI')
+    if '?' in mongodb_uri:
+        mongodb_uri += '&ssl=true&tlsAllowInvalidCertificates=true&tlsAllowInvalidHostnames=true'
     else:
-        ssl_context = None
+        mongodb_uri += '?ssl=true&tlsAllowInvalidCertificates=true&tlsAllowInvalidHostnames=true'
     
     mongoengine.connect(
         db=config('MONGODB_NAME'),
-        host=config('MONGODB_URI'),
+        host=mongodb_uri,
         serverSelectionTimeoutMS=30000,
         connectTimeoutMS=30000,
         socketTimeoutMS=30000,
         maxPoolSize=10,
         retryWrites=True,
     )
-    print("✅ MongoDB connected successfully (simple connection)")
+    print("✅ MongoDB connected successfully (URI with SSL params)")
     mongodb_connected = True
 except Exception as e:
-    connection_errors.append(f"Simple connection failed: {e}")
-    print(f"❌ MongoDB simple connection failed: {e}")
+    connection_errors.append(f"URI SSL connection failed: {e}")
+    print(f"❌ MongoDB URI SSL connection failed: {e}")
+
+# Strategy 2: Simple connection (let MongoDB handle SSL automatically)
+if not mongodb_connected:
+    try:
+        mongoengine.connect(
+            db=config('MONGODB_NAME'),
+            host=config('MONGODB_URI'),
+            serverSelectionTimeoutMS=30000,
+            connectTimeoutMS=30000,
+            socketTimeoutMS=30000,
+            maxPoolSize=10,
+            retryWrites=True,
+        )
+        print("✅ MongoDB connected successfully (simple connection)")
+        mongodb_connected = True
+    except Exception as e:
+        connection_errors.append(f"Simple connection failed: {e}")
+        print(f"❌ MongoDB simple connection failed: {e}")
 
 # Strategy 2: Direct PyMongo connection
 if not mongodb_connected:
