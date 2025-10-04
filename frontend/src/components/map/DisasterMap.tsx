@@ -86,15 +86,6 @@ export const DisasterMap = ({
 		}
 	}, [selectedReport, center])
 
-	const getMarkerColor = (type: DisasterReport['type']) => {
-		const colors = {
-			flood: 'text-blue-600',
-			fire: 'text-red-600',
-			accident: 'text-yellow-600',
-			collapse: 'text-gray-600',
-		}
-		return colors[type]
-	}
 
 	const getStatusColor = (status: DisasterReport['status']) => {
 		const colors = {

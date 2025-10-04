@@ -1,6 +1,5 @@
 import { apiClient, handleApiError } from './client'
 import type { 
-	DisasterReport,
 	CreateReportRequest, 
 	CreateReportResponse, 
 	ReportsResponse,

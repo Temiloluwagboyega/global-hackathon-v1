@@ -78,7 +78,7 @@ export const Modal = ({
 				tabIndex={-1}
 			>
 				{/* Header */}
-				{(title || onClose) && (
+				{(title || typeof onClose === 'function') && (
 					<div className="flex items-center justify-between p-6 border-b border-gray-200">
 						{title && (
 							<h2 id="modal-title" className="text-lg font-semibold text-gray-900">

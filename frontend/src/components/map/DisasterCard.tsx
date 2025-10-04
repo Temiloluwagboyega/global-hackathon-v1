@@ -1,6 +1,6 @@
 import { MapPin, Clock, Eye } from 'lucide-react'
 import { cn } from '../../utils/cn'
-import { getDisasterEmoji, getDisasterDisplayName, getDisasterColor, getStatusColor, formatTimestamp, formatDistance } from '../../utils'
+import { getDisasterEmoji, getDisasterDisplayName, getStatusColor, formatTimestamp, formatDistance } from '../../utils'
 import type { DisasterReport } from '../../types'
 
 interface DisasterCardProps {

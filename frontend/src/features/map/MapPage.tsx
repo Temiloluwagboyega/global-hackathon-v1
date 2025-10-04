@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { Navbar } from '../../components/layout/Navbar'
 import { DisasterMap } from '../../components/map/DisasterMap'
@@ -18,7 +18,7 @@ const MapPage = () => {
 	const [selectedLocation, setSelectedLocation] = useState<Coordinates | null>(null)
 	const [mapCenter, setMapCenter] = useState<Coordinates>({ lat: 6.5244, lng: 3.3792 }) // Lagos default
 
-	const { data: reportsData, isLoading } = useReports()
+	const { data: reportsData } = useReports()
 	const { data: reporterIdData } = useReporterId()
 	const { data: healthData } = useHealthCheck()
 	const { location: userLocation, getCurrentPosition } = useGeolocation()

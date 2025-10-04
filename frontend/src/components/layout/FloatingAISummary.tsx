@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bot, X } from 'lucide-react'
+import { Bot } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { AISummary } from './AISummary'
 

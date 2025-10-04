@@ -30,8 +30,8 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 		}
 
 		// Create alerts for nearby reports
-		const newAlerts: AlertState[] = nearbyReports.map(report => ({
-			id: `alert-${report.id}`,
+		const newAlerts: AlertState[] = nearbyReports.map((report, index) => ({
+			id: `alert-${(report as any).id || index}`,
 			report: report as DisasterReport,
 			distance: report.distance || 0,
 			dismissed: false,

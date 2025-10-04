@@ -1,4 +1,4 @@
-import { MapPin, AlertTriangle, Car, Building } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 import { getDisasterDisplayName } from '../../utils'
 import { useHealthCheck, useReporterId } from '../../hooks/api/useReports'
 import type { DisasterType } from '../../types'

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Filter, X } from 'lucide-react'
+import { RefreshCw, Filter } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { DisasterCard } from '../map/DisasterCard'
 import { useReports } from '../../hooks/api/useReports'
