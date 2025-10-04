@@ -85,6 +85,7 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 	type = serializers.CharField(source='disaster_type', write_only=True)
 	description = serializers.CharField()
 	reporter_id = serializers.CharField()
+	image = serializers.ImageField(required=False, allow_null=True)
 	
 	class Meta:
 		model = DisasterReport
@@ -115,6 +116,30 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 		if value not in valid_types:
 			raise serializers.ValidationError(f'Invalid disaster type. Must be one of: {", ".join(valid_types)}')
 		return value
+	
+	def create(self, validated_data):
+		"""Create a new disaster report with image handling."""
+		# Handle image file if provided
+		image_file = validated_data.pop('image', None)
+		image_url = None
+		
+		if image_file:
+			# For now, we'll store a placeholder URL
+			# In a real app, you'd upload to cloud storage (AWS S3, Cloudinary, etc.)
+			image_url = f"placeholder_image_{image_file.name}"
+		
+		# Create the report
+		report = DisasterReport(
+			disaster_type=validated_data['disaster_type'],
+			description=validated_data['description'],
+			latitude=validated_data['latitude'],
+			longitude=validated_data['longitude'],
+			reporter_id=validated_data['reporter_id'],
+			image=image_url,
+			status='active'
+		)
+		
+		return report.save()
 
 
 class UpdateReportStatusSerializer(MongoEngineSerializer):
