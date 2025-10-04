@@ -125,7 +125,7 @@ export const DisasterMap = ({
 						icon={new Icon({
 							iconUrl: `data:image/svg+xml;base64,${btoa(`
 								<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-									<circle cx="12" cy="12" r="10" fill="#3b82f6" stroke="white" stroke-width="2"/>
+									<circle cx="12" cy="12" r="10" fill="#000000" stroke="white" stroke-width="2"/>
 									<circle cx="12" cy="12" r="4" fill="white"/>
 								</svg>
 							`)}`,
@@ -135,7 +135,7 @@ export const DisasterMap = ({
 					>
 						<Popup>
 							<div className="text-center">
-								<div className="font-semibold text-blue-600">Your Location</div>
+								<div className="font-semibold text-gray-800">Your Location</div>
 								<div className="text-sm text-gray-600">
 									{userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
 								</div>

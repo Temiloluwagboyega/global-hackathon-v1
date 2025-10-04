@@ -47,7 +47,7 @@ export const AISummary = ({ className }: AISummaryProps) => {
 		<div className={cn('card', className)}>
 			{/* Header */}
 			<div className="flex items-center gap-2 mb-3">
-				<Bot className="h-4 w-4 text-blue-600" />
+				<Bot className="h-4 w-4 text-gray-800" />
 				<span className="text-sm font-medium text-gray-900">AI Summary</span>
 				<div className="ml-auto flex items-center gap-1 text-xs text-gray-500">
 					<Clock className="h-3 w-3" />

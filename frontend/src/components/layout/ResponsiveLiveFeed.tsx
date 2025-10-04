@@ -116,7 +116,7 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 							{selectedTypes.length > 0 && (
 								<button
 									onClick={clearFilters}
-									className="text-xs text-blue-600 hover:text-blue-800"
+									className="text-xs text-gray-600 hover:text-gray-800"
 								>
 									Clear all
 								</button>
@@ -132,17 +132,17 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 									<button
 										key={type}
 										onClick={() => toggleTypeFilter(type)}
-										className={cn(
-											'flex items-center justify-between p-2 rounded text-sm transition-colors',
-											isSelected
-												? 'bg-primary-100 text-primary-700 border border-primary-200'
-												: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-										)}
+									className={cn(
+										'flex items-center justify-between p-2 rounded text-sm transition-colors',
+										isSelected
+											? 'bg-gray-100 text-gray-800 border border-gray-300'
+											: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+									)}
 									>
 										<span>{getDisasterDisplayName(type)}</span>
 										<span className={cn(
 											'text-xs px-1.5 py-0.5 rounded',
-											isSelected ? 'bg-primary-200' : 'bg-gray-100'
+											isSelected ? 'bg-gray-200' : 'bg-gray-100'
 										)}>
 											{count}
 										</span>

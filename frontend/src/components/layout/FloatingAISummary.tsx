@@ -11,7 +11,7 @@ export const FloatingAISummary = () => {
 			{/* Floating Button */}
 			<button
 				onClick={() => setIsOpen(true)}
-				className="fixed bottom-20 right-6 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 z-[9997]"
+				className="fixed bottom-20 right-6 bg-gray-800 hover:bg-black text-white p-3 rounded-full shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 z-[9997]"
 				aria-label="View AI Summary"
 			>
 				<Bot className="h-5 w-5" />
