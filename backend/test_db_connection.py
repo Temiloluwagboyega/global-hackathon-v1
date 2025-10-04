@@ -22,11 +22,10 @@ def test_connection():
     try:
         print("Testing database connection...")
         
-        # Test connection
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT 1")
-            result = cursor.fetchone()
-            print(f"✓ Connection test passed: {result}")
+        # Test connection by accessing the database
+        from django.db import connection
+        connection.ensure_connection()
+        print("✓ Connection test passed")
         
         # Test model operations
         print("Testing model operations...")
