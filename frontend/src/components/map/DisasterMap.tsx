@@ -158,18 +158,19 @@ export const DisasterMap = ({
 						position={[userLocation.lat, userLocation.lng]}
 						icon={new Icon({
 							iconUrl: `data:image/svg+xml;base64,${btoa(`
-								<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-									<circle cx="12" cy="12" r="10" fill="#000000" stroke="white" stroke-width="2"/>
-									<circle cx="12" cy="12" r="4" fill="white"/>
+								<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+									<circle cx="16" cy="16" r="14" fill="#3B82F6" stroke="white" stroke-width="3"/>
+									<circle cx="16" cy="16" r="6" fill="white"/>
+									<circle cx="16" cy="16" r="2" fill="#3B82F6"/>
 								</svg>
 							`)}`,
-							iconSize: [24, 24],
-							iconAnchor: [12, 12],
+							iconSize: [32, 32],
+							iconAnchor: [16, 16],
 						})}
 					>
 						<Popup>
 							<div className="text-center">
-								<div className="font-semibold text-gray-800">Your Location</div>
+								<div className="font-semibold text-blue-600">📍 Your Location</div>
 								<div className="text-sm text-gray-600">
 									{userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
 								</div>

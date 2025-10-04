@@ -29,7 +29,7 @@ export const Navbar = ({ className }: NavbarProps) => {
 					<div className="flex items-center gap-2">
 						<MapPin className="h-6 w-6 text-gray-800" />
 						<h1 className="text-xl font-bold text-gray-900">
-							Disaster Response Map
+							Disaster Report Map
 						</h1>
 					</div>
 				</div>

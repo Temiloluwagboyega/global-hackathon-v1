@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Filter, X, List, MapPin } from 'lucide-react'
+import { RefreshCw, Filter, X, List, MapPin, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { DisasterCard } from '../map/DisasterCard'
 import { useReports } from '../../hooks/api/useReports'
@@ -19,11 +19,20 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 	const [selectedTypes, setSelectedTypes] = useState<DisasterType[]>([])
 	const [showFilters, setShowFilters] = useState(false)
 	const [isOpen, setIsOpen] = useState(false)
+	const [isCollapsed, setIsCollapsed] = useState(false) // New state for desktop collapse
 	const [radiusFilter, setRadiusFilter] = useState<number | null>(null)
 	
 	const { data: reportsData, isLoading, error, refetch, isFetching } = useReports()
 
 	const reports = (reportsData as any)?.reports || []
+	
+	// Debug logging
+	console.log('ResponsiveLiveFeed state:', {
+		userLocation,
+		radiusFilter,
+		selectedTypes,
+		reportsCount: reports.length
+	})
 
 	// Calculate distance between two points in kilometers
 	const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -53,6 +62,7 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 				report.location.lng
 			)
 			radiusMatch = distance <= radiusFilter
+			console.log(`Report ${report.id}: distance=${distance.toFixed(2)}km, radius=${radiusFilter}km, match=${radiusMatch}`)
 		}
 		
 		return typeMatch && radiusMatch
@@ -95,54 +105,69 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 			</button>
 
 			{/* Desktop Sidebar */}
-			<div className={cn('hidden md:flex bg-white border-l border-gray-200 flex-col h-full w-[30%]', className)}>
+			<div className={cn('hidden md:flex bg-white border-l border-gray-200 flex-col h-full', isCollapsed ? 'w-16' : 'w-[30%]', className)}>
 				{/* Header */}
 				<div className="p-4 border-b border-gray-200">
 					<div className="flex items-center justify-between mb-3">
-						<h2 className="text-lg font-semibold text-gray-900">Live Feed</h2>
+						{!isCollapsed && <h2 className="text-lg font-semibold text-gray-900">Live Feed</h2>}
 						<div className="flex items-center gap-2">
-							<Button
-								variant="ghost"
-								size="sm"
-								onClick={() => setShowFilters(!showFilters)}
-								className={cn(
-									'h-8 w-8 p-0',
-									showFilters && 'bg-gray-100'
-								)}
-							>
-								<Filter className="h-4 w-4" />
-							</Button>
+							{!isCollapsed && (
+								<>
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => setShowFilters(!showFilters)}
+										className={cn(
+											'h-8 w-8 p-0',
+											showFilters && 'bg-gray-100'
+										)}
+									>
+										<Filter className="h-4 w-4" />
+									</Button>
+									
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => refetch()}
+										loading={isFetching}
+										className="h-8 w-8 p-0"
+									>
+										<RefreshCw className="h-4 w-4" />
+									</Button>
+								</>
+							)}
 							
 							<Button
 								variant="ghost"
 								size="sm"
-								onClick={() => refetch()}
-								loading={isFetching}
+								onClick={() => setIsCollapsed(!isCollapsed)}
 								className="h-8 w-8 p-0"
 							>
-								<RefreshCw className="h-4 w-4" />
+								{isCollapsed ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
 							</Button>
 						</div>
 					</div>
 
 					{/* Stats */}
-					<div className="text-sm text-gray-600">
-						{isLoading ? (
-							'Loading reports...'
-						) : (
-							<>
-								{filteredReports.length} of {reports.length} reports
-								{(selectedTypes.length > 0 || radiusFilter) && (
-									<span className="ml-1 text-blue-600">(filtered)</span>
-								)}
-								{isFetching && <span className="ml-2 text-blue-600">Updating...</span>}
-							</>
-						)}
-					</div>
+					{!isCollapsed && (
+						<div className="text-sm text-gray-600">
+							{isLoading ? (
+								'Loading reports...'
+							) : (
+								<>
+									{filteredReports.length} of {reports.length} reports
+									{(selectedTypes.length > 0 || radiusFilter) && (
+										<span className="ml-1 text-blue-600">(filtered)</span>
+									)}
+									{isFetching && <span className="ml-2 text-blue-600">Updating...</span>}
+								</>
+							)}
+						</div>
+					)}
 				</div>
 
 				{/* Filters */}
-				{showFilters && (
+				{showFilters && !isCollapsed && (
 					<div className="p-4 border-b border-gray-200 bg-gray-50">
 						<div className="flex items-center justify-between mb-3">
 							<h3 className="text-sm font-medium text-gray-700">Filters</h3>
@@ -171,20 +196,24 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 							)}
 							<div className="grid grid-cols-3 gap-2">
 								{[5, 10, 25].map((radius) => (
-									<button
-										key={radius}
-										onClick={() => setRadiusFilter(radiusFilter === radius ? null : radius)}
-										disabled={!userLocation}
-										className={cn(
-											'px-3 py-2 text-xs rounded transition-colors',
-											!userLocation && 'opacity-50 cursor-not-allowed',
-											radiusFilter === radius
-												? 'bg-blue-100 text-blue-800 border border-blue-300'
-												: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-										)}
-									>
-										{radius} km
-									</button>
+								<button
+									key={radius}
+									onClick={() => {
+										const newFilter = radiusFilter === radius ? null : radius
+										console.log(`Setting radius filter to: ${newFilter}km`)
+										setRadiusFilter(newFilter)
+									}}
+									disabled={!userLocation}
+									className={cn(
+										'px-3 py-2 text-xs rounded transition-colors',
+										!userLocation && 'opacity-50 cursor-not-allowed',
+										radiusFilter === radius
+											? 'bg-blue-100 text-blue-800 border border-blue-300'
+											: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+									)}
+								>
+									{radius} km
+								</button>
 								))}
 							</div>
 						</div>
@@ -224,7 +253,8 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 				)}
 
 				{/* Reports List */}
-				<div className="flex-1 overflow-y-auto">
+				{!isCollapsed && (
+					<div className="flex-1 overflow-y-auto">
 					{error ? (
 						<div className="p-4 text-center">
 							<div className="text-red-600 text-sm mb-2">Failed to load reports</div>
@@ -271,7 +301,8 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 							))}
 						</div>
 					)}
-				</div>
+					</div>
+				)}
 			</div>
 
 			{/* Mobile Sidebar Overlay */}

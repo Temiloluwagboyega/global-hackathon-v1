@@ -26,11 +26,19 @@ const MapPage = () => {
 
 	// Set map to user location on page load
 	useEffect(() => {
-		if (userLocation && !selectedReport) {
+		if (userLocation) {
 			setMapCenter(userLocation)
 			setMapZoom(15) // Zoom in more when showing user location
 		}
-	}, [userLocation, selectedReport])
+	}, [userLocation])
+
+	// Reset to user location when no report is selected
+	useEffect(() => {
+		if (userLocation && !selectedReport) {
+			setMapCenter(userLocation)
+			setMapZoom(15)
+		}
+	}, [selectedReport, userLocation])
 
 	const handleMapClick = (coordinates: Coordinates) => {
 		setSelectedLocation(coordinates)
@@ -144,3 +152,4 @@ const MapPage = () => {
 }
 
 export { MapPage }
+

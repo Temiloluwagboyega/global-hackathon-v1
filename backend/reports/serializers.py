@@ -153,11 +153,14 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 		print(f"Received timestamp from frontend: {timestamp_str}")
 		if timestamp_str:
 			try:
-				# Parse the ISO timestamp from frontend
-				created_at = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+				# Handle different timestamp formats
+				if timestamp_str.endswith('Z'):
+					# Convert Z to +00:00 for fromisoformat
+					timestamp_str = timestamp_str.replace('Z', '+00:00')
+				created_at = datetime.fromisoformat(timestamp_str)
 				print(f"Parsed timestamp: {created_at}")
-			except (ValueError, AttributeError):
-				print(f"Failed to parse timestamp: {timestamp_str}, using current time")
+			except (ValueError, AttributeError) as e:
+				print(f"Failed to parse timestamp: {timestamp_str}, error: {e}, using current time")
 				created_at = timezone.now()
 		else:
 			print("No timestamp provided, using current time")
