@@ -94,9 +94,18 @@ DATABASES = {
         'NAME': config('MONGODB_NAME'),
         'CLIENT': {
             'host': config('MONGODB_URI'),
+            'serverSelectionTimeoutMS': 5000,
+            'connectTimeoutMS': 10000,
+            'socketTimeoutMS': 20000,
+            'maxPoolSize': 10,
+            'retryWrites': True,
         }
     }
 }
+
+# Database connection settings
+CONN_MAX_AGE = 60  # Keep connections alive for 60 seconds
+DATABASE_ROUTERS = []
 
 
 
