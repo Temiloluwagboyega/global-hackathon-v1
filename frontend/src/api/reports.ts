@@ -33,6 +33,10 @@ export const reportsApi = {
 			formData.append('longitude', reportData.location.lng.toString())
 			formData.append('status', 'active')
 			
+			// Add current browser timestamp
+			const currentTimestamp = new Date().toISOString()
+			formData.append('timestamp', currentTimestamp)
+			
 			// Add image if provided
 			if (reportData.imageFile) {
 				formData.append('image', reportData.imageFile)

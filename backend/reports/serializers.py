@@ -86,6 +86,7 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 	description = serializers.CharField()
 	reporter_id = serializers.CharField()
 	image = serializers.ImageField(required=False, allow_null=True)
+	timestamp = serializers.DateTimeField(required=False, allow_null=True)
 	
 	class Meta:
 		model = DisasterReport
@@ -96,6 +97,7 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 			'longitude',
 			'image',
 			'reporter_id',
+			'timestamp',
 		]
 	
 	def validate_latitude(self, value):
@@ -124,9 +126,28 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 		image_url = None
 		
 		if image_file:
-			# For now, we'll store a placeholder URL
-			# In a real app, you'd upload to cloud storage (AWS S3, Cloudinary, etc.)
-			image_url = f"placeholder_image_{image_file.name}"
+			try:
+				# Upload to Cloudinary
+				import cloudinary.uploader
+				upload_result = cloudinary.uploader.upload(
+					image_file,
+					folder="disaster_reports",
+					resource_type="image",
+					transformation=[
+						{"width": 800, "height": 600, "crop": "limit"},
+						{"quality": "auto"},
+						{"format": "auto"}
+					]
+				)
+				image_url = upload_result['secure_url']
+			except Exception as e:
+				print(f"Cloudinary upload failed: {e}")
+				# Fallback to placeholder if upload fails
+				image_url = f"upload_failed_{image_file.name}"
+		
+		# Use provided timestamp or current time
+		from django.utils import timezone
+		created_at = validated_data.pop('timestamp', None) or timezone.now()
 		
 		# Create the report
 		report = DisasterReport(
@@ -136,7 +157,8 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 			longitude=validated_data['longitude'],
 			reporter_id=validated_data['reporter_id'],
 			image=image_url,
-			status='active'
+			status='active',
+			created_at=created_at
 		)
 		
 		return report.save()
