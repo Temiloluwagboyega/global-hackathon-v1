@@ -18,7 +18,7 @@ from .serializers import (
 	ReportsResponseSerializer,
 	CreateReportResponseSerializer,
 )
-from .utils import get_or_create_session_reporter, get_anonymous_reporter_id, validate_reporter_id
+from .utils import get_anonymous_reporter_id, validate_reporter_id
 
 
 def haversine_distance(lat1, lon1, lat2, lon2):
@@ -148,8 +148,34 @@ class CreateReportView(CreateAPIView):
 	permission_classes = [AllowAny]
 	
 	def create(self, request, *args, **kwargs):
-		# Get or create reporter ID from session
-		reporter_id = get_or_create_session_reporter(request)
+		# Generate reporter ID using browser fingerprinting (same as get_reporter_id_view)
+		try:
+			import hashlib
+			
+			# Get request characteristics for fingerprinting
+			user_agent = request.META.get('HTTP_USER_AGENT', '')
+			accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+			accept_encoding = request.META.get('HTTP_ACCEPT_ENCODING', '')
+			
+			# Get IP address (for additional uniqueness)
+			x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+			if x_forwarded_for:
+				ip = x_forwarded_for.split(',')[0].strip()
+			else:
+				ip = request.META.get('REMOTE_ADDR', '')
+			
+			# Create a fingerprint from browser characteristics
+			fingerprint_data = f"{user_agent}|{accept_language}|{accept_encoding}|{ip}"
+			fingerprint_hash = hashlib.md5(fingerprint_data.encode()).hexdigest()[:12]
+			
+			# Create consistent reporter ID
+			reporter_id = f"reporter_{fingerprint_hash}"
+			
+		except Exception as e:
+			print(f"Error generating reporter ID in create: {e}")
+			# Fallback to UUID
+			import uuid
+			reporter_id = f"reporter_{uuid.uuid4().hex[:8]}"
 		
 		# Add reporter_id to the data
 		data = request.data.copy()
