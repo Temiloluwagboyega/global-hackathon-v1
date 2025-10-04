@@ -1,9 +1,9 @@
-from django.db import models
+from mongoengine import Document, fields
 from django.utils import timezone
 import uuid
 
 
-class DisasterReport(models.Model):
+class DisasterReport(Document):
 	"""
 	Model for storing disaster reports with geospatial data.
 	"""
@@ -21,62 +21,65 @@ class DisasterReport(models.Model):
 		('investigating', 'Under Investigation'),
 	]
 	
-	id = models.AutoField(primary_key=True)
-	disaster_type = models.CharField(
+	disaster_type = fields.StringField(
 		max_length=20,
 		choices=DISASTER_TYPE_CHOICES,
 		help_text='Type of disaster incident'
 	)
-	description = models.TextField(
+	description = fields.StringField(
 		help_text='Detailed description of the incident'
 	)
-	latitude = models.FloatField(
+	latitude = fields.FloatField(
 		help_text='Latitude coordinate of the incident location'
 	)
-	longitude = models.FloatField(
+	longitude = fields.FloatField(
 		help_text='Longitude coordinate of the incident location'
 	)
-	status = models.CharField(
+	status = fields.StringField(
 		max_length=20,
 		choices=STATUS_CHOICES,
 		default='active',
 		help_text='Current status of the incident'
 	)
-	image = models.ImageField(
-		upload_to='disaster_images/',
+	image = fields.StringField(
 		null=True,
 		blank=True,
-		help_text='Optional image of the incident',
-		storage=None,  # Will use Cloudinary in production
+		help_text='Optional image URL of the incident'
 	)
-	reporter_id = models.CharField(
+	reporter_id = fields.StringField(
 		max_length=100,
 		null=True,
 		blank=True,
 		help_text='Optional identifier for the reporter'
 	)
-	created_at = models.DateTimeField(
+	created_at = fields.DateTimeField(
 		default=timezone.now,
 		help_text='When the report was created'
 	)
-	updated_at = models.DateTimeField(
-		auto_now=True,
+	updated_at = fields.DateTimeField(
+		default=timezone.now,
 		help_text='When the report was last updated'
 	)
 	
-	class Meta:
-		ordering = ['-created_at']
-		verbose_name = 'Disaster Report'
-		verbose_name_plural = 'Disaster Reports'
-		indexes = [
-			models.Index(fields=['disaster_type']),
-			models.Index(fields=['status']),
-			models.Index(fields=['created_at']),
-			models.Index(fields=['latitude', 'longitude']),
+	meta = {
+		'ordering': ['-created_at'],
+		'verbose_name': 'Disaster Report',
+		'verbose_name_plural': 'Disaster Reports',
+		'indexes': [
+			'disaster_type',
+			'status',
+			'created_at',
+			('latitude', 'longitude'),
 		]
+	}
 	
 	def __str__(self):
 		return f'{self.get_disaster_type_display()} - {self.created_at.strftime("%Y-%m-%d %H:%M")}'
+	
+	def save(self, *args, **kwargs):
+		"""Override save to update the updated_at field."""
+		self.updated_at = timezone.now()
+		return super().save(*args, **kwargs)
 	
 	@property
 	def location(self):
@@ -94,14 +97,9 @@ class DisasterReport(models.Model):
 	@property
 	def image_url(self):
 		"""Return the image URL if image exists."""
-		if self.image:
-			return self.image.url
-		return None
+		return self.image if self.image else None
 	
 	@property
 	def mongodb_id(self):
-		"""Return a unique ID based on report content and timestamp."""
-		import hashlib
-		# Create a unique ID based on report content and timestamp
-		content = f"{self.disaster_type}_{self.description}_{self.latitude}_{self.longitude}_{self.created_at.isoformat()}"
-		return hashlib.md5(content.encode()).hexdigest()[:24]  # 24 chars like MongoDB ObjectId
+		"""Return the MongoDB ObjectId as string."""
+		return str(self.id)

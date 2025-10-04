@@ -57,21 +57,31 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'disaster_response.wsgi.application'
 
-# MongoDB (Djongo)
+# MongoDB (MongoEngine)
+import mongoengine
+try:
+    mongoengine.connect(
+        host=config('MONGODB_URI'),
+        db=config('MONGODB_NAME'),
+        serverSelectionTimeoutMS=10000,
+        connectTimeoutMS=20000,
+        socketTimeoutMS=30000,
+        maxPoolSize=10,
+        retryWrites=True,
+        tlsAllowInvalidCertificates=True,
+        tlsAllowInvalidHostnames=True,
+    )
+    print("✅ MongoDB connected successfully")
+except Exception as e:
+    print(f"❌ MongoDB connection failed: {e}")
+    # In production, you might want to raise this error
+    # raise e
+
+# Keep Django's default database for admin and auth
 DATABASES = {
     'default': {
-        'ENGINE': 'djongo',
-        'NAME': config('MONGODB_NAME'),
-        'CLIENT': {
-            'host': config('MONGODB_URI'),
-            'serverSelectionTimeoutMS': 10000,
-            'connectTimeoutMS': 20000,
-            'socketTimeoutMS': 30000,
-            'maxPoolSize': 10,
-            'retryWrites': True,
-            'tlsAllowInvalidCertificates': True,
-            'tlsAllowInvalidHostnames': True,
-        }
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -112,9 +122,7 @@ if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
     CORS_ALLOW_CREDENTIALS = True
 else:
-    CORS_ALLOWED_ORIGINS = [
-        "https://disaster-report-map.onrender.com",
-    ]
+    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173,http://localhost:3000').split(',')
     CORS_ALLOW_CREDENTIALS = True
 
 # Django REST Framework
@@ -144,6 +152,8 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API for reporting and managing disaster incidents',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': '/api/',
 }
 
 # File upload limits

@@ -8,7 +8,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView, UpdateAPIView
-from django.db.models import Q, Count
+from mongoengine import Q
 from .models import DisasterReport
 from .serializers import (
 	DisasterReportSerializer,
@@ -74,10 +74,8 @@ class ReportsListView(ListAPIView):
 					if distance <= radius:
 						filtered_reports.append(report)
 				
-				# Convert back to queryset-like object
-				queryset = DisasterReport.objects.filter(
-					id__in=[report.id for report in filtered_reports]
-				)
+				# Return filtered reports as a list (MongoEngine doesn't support id__in with ObjectIds)
+				return filtered_reports
 				
 			except (ValueError, TypeError):
 				# If invalid coordinates, return all reports
@@ -164,14 +162,14 @@ def ai_summary_view(request):
 	try:
 		# Get reports from last 24 hours
 		last_24_hours = timezone.now() - timedelta(hours=24)
-		recent_reports = DisasterReport.objects.filter(created_at__gte=last_24_hours)
+		recent_reports = DisasterReport.objects(created_at__gte=last_24_hours)
 		
 		# Count by disaster type
 		summary_counts = {
-			'floods': recent_reports.filter(disaster_type='flood').count(),
-			'fires': recent_reports.filter(disaster_type='fire').count(),
-			'accidents': recent_reports.filter(disaster_type='accident').count(),
-			'collapses': recent_reports.filter(disaster_type='collapse').count(),
+			'floods': recent_reports(disaster_type='flood').count(),
+			'fires': recent_reports(disaster_type='fire').count(),
+			'accidents': recent_reports(disaster_type='accident').count(),
+			'collapses': recent_reports(disaster_type='collapse').count(),
 		}
 		
 		# Generate summary text
@@ -243,17 +241,17 @@ def reports_summary_view(request):
 		
 		# Count by disaster type
 		summary_counts = {
-			'floods': all_reports.filter(disaster_type='flood').count(),
-			'fires': all_reports.filter(disaster_type='fire').count(),
-			'accidents': all_reports.filter(disaster_type='accident').count(),
-			'collapses': all_reports.filter(disaster_type='collapse').count(),
+			'floods': all_reports(disaster_type='flood').count(),
+			'fires': all_reports(disaster_type='fire').count(),
+			'accidents': all_reports(disaster_type='accident').count(),
+			'collapses': all_reports(disaster_type='collapse').count(),
 		}
 		
 		# Count by status
 		status_counts = {
-			'active': all_reports.filter(status='active').count(),
-			'resolved': all_reports.filter(status='resolved').count(),
-			'investigating': all_reports.filter(status='investigating').count(),
+			'active': all_reports(status='active').count(),
+			'resolved': all_reports(status='resolved').count(),
+			'investigating': all_reports(status='investigating').count(),
 		}
 		
 		response_data = {

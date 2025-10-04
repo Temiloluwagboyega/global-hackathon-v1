@@ -8,9 +8,9 @@ echo "Starting Disaster Response API..."
 echo "Python version:"
 python --version
 
-# Run migrations (fake for MongoDB with djongo)
+# Run migrations (only for Django built-in apps, MongoEngine handles its own schema)
 echo "Running migrations..."
-python manage.py migrate --fake
+python manage.py migrate
 
 # Collect static files
 echo "Collecting static files..."
