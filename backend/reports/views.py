@@ -311,19 +311,8 @@ def get_reporter_id_view(request):
 		# Create consistent reporter ID
 		reporter_id = f"reporter_{fingerprint_hash}"
 		
-		# Try to save to session for persistence (optional)
-		session_active = False
-		try:
-			request.session['reporter_id'] = reporter_id
-			request.session.set_expiry(30 * 24 * 60 * 60)  # 30 days
-			session_active = True
-		except Exception as session_error:
-			print(f"Session save failed (non-critical): {session_error}")
-			# Continue without session - the ID is still valid
-		
 		return Response({
 			'reporter_id': reporter_id,
-			'session_active': session_active,
 			'timestamp': timezone.now().isoformat(),
 			'method': 'fingerprint'
 		})
@@ -335,7 +324,6 @@ def get_reporter_id_view(request):
 		reporter_id = f"reporter_{uuid.uuid4().hex[:8]}"
 		return Response({
 			'reporter_id': reporter_id,
-			'session_active': False,
 			'timestamp': timezone.now().isoformat(),
 			'error': 'Using fallback UUID',
 			'method': 'fallback'
