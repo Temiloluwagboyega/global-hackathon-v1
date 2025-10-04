@@ -88,10 +88,10 @@ Create a `.env.local` file in the frontend directory:
 
 ```env
 # API Configuration
-VITE_API_BASE_URL=http://localhost:3001/api
+VITE_API_BASE_URL=https://disaster-report-map.onrender.com/api
 
 # Development Configuration
-VITE_USE_MOCK_DATA=true
+VITE_USE_MOCK_DATA=false
 
 # Production Configuration (for deployment)
 # VITE_API_BASE_URL=https://your-backend-api.com/api
