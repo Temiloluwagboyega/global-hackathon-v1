@@ -48,10 +48,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -82,14 +82,13 @@ WSGI_APPLICATION = 'disaster_response.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-
 # MongoDB configuration
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
-        'NAME': config('MONGODB_NAME', default='disaster_response'),
+        'NAME': config('MONGODB_NAME'),
         'CLIENT': {
-            'host': config('MONGODB_URI', default='mongodb+srv://username:password@cluster.mongodb.net/disaster_response?retryWrites=true&w=majority'),
+            'host': config('MONGODB_URI'),
         }
     }
 }
@@ -141,14 +140,13 @@ MEDIA_ROOT = BASE_DIR / config('MEDIA_ROOT', default='media')
 
 # Cloudinary Configuration
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default='ydbpb7sjus'),
-    'API_KEY': config('CLOUDINARY_API_KEY', default='512289721675814'),
-    'API_SECRET': config('CLOUDINARY_API_SECRET', default='HExGBYZ5k8ZUpn50P4f8npYxBY0'),
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': config('CLOUDINARY_API_KEY'),
+    'API_SECRET': config('CLOUDINARY_API_SECRET'),
 }
 
-# Use Cloudinary for media files in production
-if not DEBUG:
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# Use Cloudinary for media files (both development and production)
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

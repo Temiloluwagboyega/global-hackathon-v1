@@ -26,16 +26,24 @@ export const reportsApi = {
 	// Create a new report
 	createReport: async (reportData: CreateReportRequest): Promise<CreateReportResponse> => {
 		try {
-			// Prepare data for our backend API
-			const requestData = {
-				type: reportData.type,
-				description: reportData.description,
-				latitude: reportData.location.lat,
-				longitude: reportData.location.lng,
-				status: 'active'
+			// Prepare FormData for multipart upload (to support images)
+			const formData = new FormData()
+			formData.append('type', reportData.type)
+			formData.append('description', reportData.description)
+			formData.append('latitude', reportData.location.lat.toString())
+			formData.append('longitude', reportData.location.lng.toString())
+			formData.append('status', 'active')
+			
+			// Add image if provided
+			if (reportData.imageFile) {
+				formData.append('image', reportData.imageFile)
 			}
 
-			const response = await apiClient.post<CreateReportResponse>('/reports/create/', requestData)
+			const response = await apiClient.post<CreateReportResponse>('/reports/create/', formData, {
+				headers: {
+					'Content-Type': 'multipart/form-data',
+				},
+			})
 			return response.data
 		} catch (error) {
 			throw new Error(handleApiError(error))

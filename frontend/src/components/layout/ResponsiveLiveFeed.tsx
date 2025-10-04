@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Filter, X, List, MapPin } from 'lucide-react'
+import { RefreshCw, Filter, X, List } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { DisasterCard } from '../map/DisasterCard'
 import { useReports } from '../../hooks/api/useReports'
@@ -22,11 +22,11 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 	
 	const { data: reportsData, isLoading, error, refetch, isFetching } = useReports()
 
-	const reports = reportsData?.reports || []
+	const reports = (reportsData as any)?.reports || []
 
 	// Filter reports by selected types
 	const filteredReports = selectedTypes.length > 0 
-		? reports.filter(report => selectedTypes.includes(report.type))
+		? reports.filter((report: any) => selectedTypes.includes(report.type))
 		: reports
 
 	const toggleTypeFilter = (type: DisasterType) => {
@@ -42,7 +42,7 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 	}
 
 	const getTypeCount = (type: DisasterType) => {
-		return reports.filter(report => report.type === type).length
+		return reports.filter((report: any) => report.type === type).length
 	}
 
 	const handleReportClick = (report: DisasterReport) => {
@@ -191,7 +191,7 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 						</div>
 					) : (
 						<div className="p-4 space-y-3">
-							{filteredReports.map((report) => (
+							{filteredReports.map((report: any) => (
 								<DisasterCard
 									key={report.id}
 									report={report}
@@ -265,7 +265,7 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 						</div>
 					) : (
 						<div className="p-4 space-y-3">
-							{filteredReports.map((report) => (
+							{filteredReports.map((report: any) => (
 								<DisasterCard
 									key={report.id}
 									report={report}

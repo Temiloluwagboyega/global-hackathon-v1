@@ -97,3 +97,11 @@ class DisasterReport(models.Model):
 		if self.image:
 			return self.image.url
 		return None
+	
+	@property
+	def mongodb_id(self):
+		"""Return a unique ID based on report content and timestamp."""
+		import hashlib
+		# Create a unique ID based on report content and timestamp
+		content = f"{self.disaster_type}_{self.description}_{self.latitude}_{self.longitude}_{self.created_at.isoformat()}"
+		return hashlib.md5(content.encode()).hexdigest()[:24]  # 24 chars like MongoDB ObjectId

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { reportsApi } from '../../api/reports'
-import type { CreateReportRequest } from '../../types'
+import type { CreateReportRequest, CreateReportResponse } from '../../types'
 
 // Query keys
 export const queryKeys = {
@@ -12,7 +12,7 @@ export const queryKeys = {
 
 // Hook to fetch all reports with polling
 export const useReports = () => {
-	return useQuery({
+	const query = useQuery({
 		queryKey: queryKeys.reports,
 		queryFn: reportsApi.getReports,
 		refetchInterval: 10000, // Poll every 10 seconds
@@ -22,6 +22,16 @@ export const useReports = () => {
 		retry: 3,
 		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
 	})
+
+	// Log data changes
+	if (query.data) {
+		console.log('Reports fetched:', query.data?.reports?.length, 'reports')
+	}
+	if (query.error) {
+		console.error('Failed to fetch reports:', query.error)
+	}
+
+	return query
 }
 
 // Hook to create a new report
@@ -30,13 +40,15 @@ export const useCreateReport = () => {
 
 	return useMutation({
 		mutationFn: (reportData: CreateReportRequest) => reportsApi.createReport(reportData),
-		onSuccess: () => {
+		onSuccess: (data: CreateReportResponse) => {
+			console.log('Report created successfully:', data)
 			// Invalidate and refetch reports
 			queryClient.invalidateQueries({ queryKey: queryKeys.reports })
 			// Also invalidate AI summary as it might change
 			queryClient.invalidateQueries({ queryKey: queryKeys.aiSummary })
+			console.log('Queries invalidated')
 		},
-		onError: (error) => {
+		onError: (error: Error) => {
 			console.error('Failed to create report:', error)
 		},
 	})

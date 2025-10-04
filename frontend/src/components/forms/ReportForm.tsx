@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import { MapPin, Camera, Loader2 } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { MapPin, Camera } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { useCreateReport } from '../../hooks/api/useReports'
 import { useGeolocation } from '../../hooks/geolocation/useGeolocation'
@@ -42,6 +42,20 @@ export const ReportForm = ({ onSuccess, onCancel, initialLocation }: ReportFormP
 		setLocationError(null)
 		getCurrentPosition()
 	}
+
+	// Handle geolocation errors
+	useEffect(() => {
+		if (geoError) {
+			setLocationError(geoError)
+		}
+	}, [geoError])
+
+	// Update form location when userLocation changes
+	useEffect(() => {
+		if (userLocation) {
+			setFormData(prev => ({ ...prev, location: userLocation }))
+		}
+	}, [userLocation])
 
 	const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
@@ -162,14 +176,29 @@ export const ReportForm = ({ onSuccess, onCancel, initialLocation }: ReportFormP
 							<span className="text-sm">
 								{formData.location.lat.toFixed(4)}, {formData.location.lng.toFixed(4)}
 							</span>
+							{(formData.location as any).accuracy && (
+								<span className="text-xs text-green-600">
+									(±{Math.round((formData.location as any).accuracy)}m)
+								</span>
+							)}
 						</div>
-						<button
-							type="button"
-							onClick={() => setFormData(prev => ({ ...prev, location: null }))}
-							className="text-xs text-green-600 hover:text-green-800 mt-1"
-						>
-							Change location
-						</button>
+						<div className="flex gap-2 mt-2">
+							<button
+								type="button"
+								onClick={handleLocationClick}
+								disabled={locationLoading}
+								className="text-xs text-green-600 hover:text-green-800 disabled:opacity-50"
+							>
+								{locationLoading ? 'Updating...' : 'Update location'}
+							</button>
+							<button
+								type="button"
+								onClick={() => setFormData(prev => ({ ...prev, location: null }))}
+								className="text-xs text-red-600 hover:text-red-800"
+							>
+								Remove location
+							</button>
+						</div>
 					</div>
 				) : (
 					<div className="space-y-2">
