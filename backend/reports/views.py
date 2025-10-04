@@ -286,60 +286,60 @@ def ai_summary_view(request):
 @permission_classes([AllowAny])
 def get_reporter_id_view(request):
 	"""
-	API view to get or create a reporter ID for the current session.
+	API view to get or create a reporter ID using browser fingerprinting.
+	This approach doesn't rely on sessions and generates consistent IDs.
 	"""
 	try:
-		# Try to get existing reporter ID from session
-		session_key = 'reporter_id'
-		reporter_id = request.session.get(session_key)
+		import hashlib
 		
-		if not reporter_id:
-			# Generate new reporter ID if none exists
-			reporter_id = get_anonymous_reporter_id()
-			try:
-				request.session[session_key] = reporter_id
-				request.session.set_expiry(30 * 24 * 60 * 60)  # 30 days
-				session_active = True
-			except Exception as session_error:
-				print(f"Session save failed: {session_error}")
-				session_active = False
+		# Get request characteristics for fingerprinting
+		user_agent = request.META.get('HTTP_USER_AGENT', '')
+		accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+		accept_encoding = request.META.get('HTTP_ACCEPT_ENCODING', '')
+		
+		# Get IP address (for additional uniqueness)
+		x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+		if x_forwarded_for:
+			ip = x_forwarded_for.split(',')[0].strip()
 		else:
+			ip = request.META.get('REMOTE_ADDR', '')
+		
+		# Create a fingerprint from browser characteristics
+		fingerprint_data = f"{user_agent}|{accept_language}|{accept_encoding}|{ip}"
+		fingerprint_hash = hashlib.md5(fingerprint_data.encode()).hexdigest()[:12]
+		
+		# Create consistent reporter ID
+		reporter_id = f"reporter_{fingerprint_hash}"
+		
+		# Try to save to session for persistence (optional)
+		session_active = False
+		try:
+			request.session['reporter_id'] = reporter_id
+			request.session.set_expiry(30 * 24 * 60 * 60)  # 30 days
 			session_active = True
+		except Exception as session_error:
+			print(f"Session save failed (non-critical): {session_error}")
+			# Continue without session - the ID is still valid
 		
 		return Response({
 			'reporter_id': reporter_id,
 			'session_active': session_active,
-			'timestamp': timezone.now().isoformat()
+			'timestamp': timezone.now().isoformat(),
+			'method': 'fingerprint'
 		})
 		
 	except Exception as e:
 		print(f"Error in get_reporter_id_view: {e}")
 		# Ultimate fallback - always return a valid response
-		reporter_id = get_anonymous_reporter_id()
+		import uuid
+		reporter_id = f"reporter_{uuid.uuid4().hex[:8]}"
 		return Response({
 			'reporter_id': reporter_id,
 			'session_active': False,
 			'timestamp': timezone.now().isoformat(),
-			'error': 'Using fallback anonymous ID'
+			'error': 'Using fallback UUID',
+			'method': 'fallback'
 		})
-
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def simple_reporter_id_view(request):
-	"""
-	Simple reporter ID endpoint that doesn't rely on sessions.
-	This is a fallback for when session management fails.
-	"""
-	import uuid
-	reporter_id = f"reporter_{uuid.uuid4().hex[:8]}"
-	
-	return Response({
-		'reporter_id': reporter_id,
-		'session_active': False,
-		'timestamp': timezone.now().isoformat(),
-		'method': 'simple_fallback'
-	})
 
 
 @api_view(['GET'])

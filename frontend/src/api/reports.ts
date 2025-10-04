@@ -76,20 +76,13 @@ export const reportsApi = {
 		}
 	},
 
-	// Get reporter ID (session-based with fallback)
+	// Get reporter ID (browser fingerprinting-based)
 	getReporterId: async (): Promise<{ reporter_id: string; session_active: boolean; timestamp: string }> => {
 		try {
 			const response = await apiClient.get('/reporter/id/')
 			return response.data
 		} catch (error) {
-			console.warn('Primary reporter ID endpoint failed, trying fallback:', error)
-			try {
-				// Fallback to simple endpoint
-				const response = await apiClient.get('/reporter/simple/')
-				return response.data
-			} catch (fallbackError) {
-				throw new Error(handleApiError(fallbackError))
-			}
+			throw new Error(handleApiError(error))
 		}
 	},
 
