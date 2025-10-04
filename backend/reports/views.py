@@ -289,23 +289,57 @@ def get_reporter_id_view(request):
 	API view to get or create a reporter ID for the current session.
 	"""
 	try:
-		reporter_id = get_or_create_session_reporter(request)
+		# Try to get existing reporter ID from session
+		session_key = 'reporter_id'
+		reporter_id = request.session.get(session_key)
+		
+		if not reporter_id:
+			# Generate new reporter ID if none exists
+			reporter_id = get_anonymous_reporter_id()
+			try:
+				request.session[session_key] = reporter_id
+				request.session.set_expiry(30 * 24 * 60 * 60)  # 30 days
+				session_active = True
+			except Exception as session_error:
+				print(f"Session save failed: {session_error}")
+				session_active = False
+		else:
+			session_active = True
 		
 		return Response({
 			'reporter_id': reporter_id,
-			'session_active': True,
+			'session_active': session_active,
 			'timestamp': timezone.now().isoformat()
 		})
+		
 	except Exception as e:
 		print(f"Error in get_reporter_id_view: {e}")
-		# Fallback to anonymous reporter ID if session fails
+		# Ultimate fallback - always return a valid response
 		reporter_id = get_anonymous_reporter_id()
 		return Response({
 			'reporter_id': reporter_id,
 			'session_active': False,
 			'timestamp': timezone.now().isoformat(),
-			'error': 'Session failed, using anonymous ID'
+			'error': 'Using fallback anonymous ID'
 		})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def simple_reporter_id_view(request):
+	"""
+	Simple reporter ID endpoint that doesn't rely on sessions.
+	This is a fallback for when session management fails.
+	"""
+	import uuid
+	reporter_id = f"reporter_{uuid.uuid4().hex[:8]}"
+	
+	return Response({
+		'reporter_id': reporter_id,
+		'session_active': False,
+		'timestamp': timezone.now().isoformat(),
+		'method': 'simple_fallback'
+	})
 
 
 @api_view(['GET'])

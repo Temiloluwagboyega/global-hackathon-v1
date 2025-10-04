@@ -17,6 +17,7 @@ urlpatterns = [
 	
 	# Reporter management
 	path('reporter/id/', views.get_reporter_id_view, name='get-reporter-id'),
+	path('reporter/simple/', views.simple_reporter_id_view, name='simple-reporter-id'),
 	
 	# Health check
 	path('health/', views.health_check_view, name='health-check'),
