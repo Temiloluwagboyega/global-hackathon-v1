@@ -288,13 +288,24 @@ def get_reporter_id_view(request):
 	"""
 	API view to get or create a reporter ID for the current session.
 	"""
-	reporter_id = get_or_create_session_reporter(request)
-	
-	return Response({
-		'reporter_id': reporter_id,
-		'session_active': True,
-		'timestamp': timezone.now().isoformat()
-	})
+	try:
+		reporter_id = get_or_create_session_reporter(request)
+		
+		return Response({
+			'reporter_id': reporter_id,
+			'session_active': True,
+			'timestamp': timezone.now().isoformat()
+		})
+	except Exception as e:
+		print(f"Error in get_reporter_id_view: {e}")
+		# Fallback to anonymous reporter ID if session fails
+		reporter_id = get_anonymous_reporter_id()
+		return Response({
+			'reporter_id': reporter_id,
+			'session_active': False,
+			'timestamp': timezone.now().isoformat(),
+			'error': 'Session failed, using anonymous ID'
+		})
 
 
 @api_view(['GET'])

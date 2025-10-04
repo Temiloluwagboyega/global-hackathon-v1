@@ -294,8 +294,11 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = False  # Set to False to allow HTTP sessions
+    CSRF_COOKIE_SECURE = False     # Set to False to allow HTTP CSRF
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_AGE = 30 * 24 * 60 * 60  # 30 days
+    SESSION_SAVE_EVERY_REQUEST = True
     SECURE_SSL_REDIRECT = True
 
 # -----------------------------
