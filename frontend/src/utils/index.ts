@@ -55,8 +55,26 @@ export const getStatusColor = (status: 'active' | 'resolved' | 'investigating'):
  * Format timestamp for display
  */
 export const formatTimestamp = (timestamp: string): string => {
-	const date = new Date(timestamp)
+	// Handle timestamp format with microseconds (e.g., '2025-10-04T21:49:33.066000')
+	// Convert to standard ISO format by truncating microseconds to milliseconds
+	let normalizedTimestamp = timestamp
+	if (timestamp.includes('.') && timestamp.split('.')[1].length > 3) {
+		// Truncate microseconds to milliseconds (keep only first 3 digits after decimal)
+		const parts = timestamp.split('.')
+		const seconds = parts[0]
+		const microseconds = parts[1].substring(0, 3) // Keep only first 3 digits
+		normalizedTimestamp = `${seconds}.${microseconds}`
+	}
+	
+	const date = new Date(normalizedTimestamp)
 	const now = new Date()
+	
+	// Check if date is valid
+	if (isNaN(date.getTime())) {
+		console.warn('Invalid timestamp:', timestamp)
+		return 'Unknown time'
+	}
+	
 	const diffMs = now.getTime() - date.getTime()
 	const diffMins = Math.floor(diffMs / (1000 * 60))
 	const diffHours = Math.floor(diffMs / (1000 * 60 * 60))

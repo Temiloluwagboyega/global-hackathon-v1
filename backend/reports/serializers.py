@@ -64,6 +64,7 @@ class DisasterReportSerializer(MongoEngineSerializer):
 		# Ensure all required fields are present
 		data['description'] = instance.description
 		data['status'] = instance.status
+		data['reporterId'] = instance.reporter_id  # Explicitly add reporter_id
 		
 		# Map disaster_type to type for frontend compatibility
 		data['type'] = instance.disaster_type
@@ -71,10 +72,6 @@ class DisasterReportSerializer(MongoEngineSerializer):
 		# Map image_url to imageUrl for frontend compatibility
 		if 'image_url' in data:
 			data['imageUrl'] = data.pop('image_url')
-		
-		# Map reporter_id to reporterId for frontend compatibility
-		if 'reporter_id' in data:
-			data['reporterId'] = data.pop('reporter_id')
 		
 		return data
 

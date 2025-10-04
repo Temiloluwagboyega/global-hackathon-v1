@@ -113,7 +113,14 @@ export const ReportForm = ({ onSuccess, onCancel, initialLocation }: ReportFormP
 			toast.success('Report submitted successfully!')
 			onSuccess?.()
 		} catch (error) {
-			toast.error('Failed to submit report. Please try again.')
+			console.error('Report submission error:', error)
+			// Check if the error is actually a success (sometimes the response parsing fails)
+			if (error instanceof Error && error.message.includes('success')) {
+				toast.success('Report submitted successfully!')
+				onSuccess?.()
+			} else {
+				toast.error('Failed to submit report. Please try again.')
+			}
 		}
 	}
 

@@ -50,6 +50,9 @@ export const useCreateReport = () => {
 		},
 		onError: (error: Error) => {
 			console.error('Failed to create report:', error)
+			// Even if there's an error, try to refresh the reports list
+			// in case the report was actually created
+			queryClient.invalidateQueries({ queryKey: queryKeys.reports })
 		},
 	})
 }
