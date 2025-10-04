@@ -8,7 +8,7 @@ import { AlertBanner } from '../../components/layout/AlertBanner'
 import { FloatingAISummary } from '../../components/layout/FloatingAISummary'
 import { Modal } from '../../components/ui/Modal'
 import { ReportForm } from '../../components/forms/ReportForm'
-import { useReports, useReporterId, useHealthCheck } from '../../hooks/api/useReports'
+import { useReports } from '../../hooks/api/useReports'
 import { useGeolocation } from '../../hooks/geolocation/useGeolocation'
 import type { DisasterReport, Coordinates } from '../../types'
 
@@ -19,9 +19,7 @@ const MapPage = () => {
 	const [mapCenter, setMapCenter] = useState<Coordinates>({ lat: 6.5244, lng: 3.3792 }) // Lagos default
 
 	const { data: reportsData } = useReports()
-	const { data: reporterIdData } = useReporterId()
-	const { data: healthData } = useHealthCheck()
-	const { location: userLocation, getCurrentPosition } = useGeolocation()
+	const { location: userLocation } = useGeolocation()
 
 	const reports = reportsData?.reports || []
 
