@@ -56,7 +56,7 @@ export const getStatusColor = (status: 'active' | 'resolved' | 'investigating'):
  */
 export const formatTimestamp = (timestamp: string): string => {
 	// Handle various timestamp formats:
-	// 1. With microseconds and timezone: '2025-10-04T23:02:57.654549+00:00'
+	// 1. With microseconds and timezone: '2025-10-05T01:57:35.390000+01:00'
 	// 2. With microseconds only: '2025-10-04T21:49:33.066000'
 	// 3. Standard ISO: '2025-10-04T21:49:33.066Z'
 	
@@ -64,14 +64,29 @@ export const formatTimestamp = (timestamp: string): string => {
 	
 	// Handle microseconds (more than 3 digits after decimal point)
 	if (normalizedTimestamp.includes('.') && normalizedTimestamp.split('.')[1].length > 3) {
-		const parts = normalizedTimestamp.split('.')
-		const seconds = parts[0]
-		const microseconds = parts[1]
-		const timezonePart = microseconds.includes('+') || microseconds.includes('-') || microseconds.includes('Z') 
-			? microseconds.substring(3) // Keep timezone part after microseconds
-			: ''
-		const milliseconds = microseconds.substring(0, 3) // Keep only first 3 digits (milliseconds)
-		normalizedTimestamp = `${seconds}.${milliseconds}${timezonePart}`
+		// Find the decimal point and the timezone indicator
+		const decimalIndex = normalizedTimestamp.indexOf('.')
+		const timezoneIndex = normalizedTimestamp.search(/[+-]|Z/)
+		
+		if (timezoneIndex > decimalIndex) {
+			// Extract parts: seconds, microseconds, timezone
+			const seconds = normalizedTimestamp.substring(0, decimalIndex)
+			const microseconds = normalizedTimestamp.substring(decimalIndex + 1, timezoneIndex)
+			const timezone = normalizedTimestamp.substring(timezoneIndex)
+			
+			// Truncate microseconds to milliseconds (3 digits)
+			const milliseconds = microseconds.substring(0, 3)
+			
+			// Reconstruct the timestamp
+			normalizedTimestamp = `${seconds}.${milliseconds}${timezone}`
+		} else {
+			// No timezone, just truncate microseconds
+			const parts = normalizedTimestamp.split('.')
+			const seconds = parts[0]
+			const microseconds = parts[1]
+			const milliseconds = microseconds.substring(0, 3)
+			normalizedTimestamp = `${seconds}.${milliseconds}`
+		}
 	}
 	
 	// Create Date object directly from the timestamp (preserves timezone)
@@ -82,6 +97,16 @@ export const formatTimestamp = (timestamp: string): string => {
 	if (isNaN(date.getTime())) {
 		console.warn('Invalid timestamp:', timestamp, 'normalized:', normalizedTimestamp)
 		return 'Unknown time'
+	}
+	
+	// Debug logging for timestamp issues
+	if (import.meta.env.DEV) {
+		console.log('Timestamp debug:', {
+			original: timestamp,
+			normalized: normalizedTimestamp,
+			date: date.toISOString(),
+			now: now.toISOString()
+		})
 	}
 	
 	const diffMs = now.getTime() - date.getTime()
