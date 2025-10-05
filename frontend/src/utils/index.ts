@@ -92,10 +92,14 @@ export const formatTimestamp = (timestamp: string): string => {
 	
 	// Create Date object directly from the timestamp
 	const date = new Date(normalizedTimestamp)
+	
+	// HACK: Add 60 minutes to compensate for timezone issue
+	const adjustedDate = new Date(date.getTime() + (60 * 60 * 1000))
+	
 	const now = new Date()
 	
 	// Check if date is valid
-	if (isNaN(date.getTime())) {
+	if (isNaN(adjustedDate.getTime())) {
 		console.warn('Invalid timestamp:', timestamp, 'normalized:', normalizedTimestamp)
 		return 'Unknown time'
 	}
@@ -106,14 +110,16 @@ export const formatTimestamp = (timestamp: string): string => {
 			original: timestamp,
 			normalized: normalizedTimestamp,
 			date: date.toISOString(),
+			adjustedDate: adjustedDate.toISOString(),
 			now: now.toISOString(),
 			dateLocal: date.toString(),
+			adjustedLocal: adjustedDate.toString(),
 			nowLocal: now.toString()
 		})
 	}
 	
-	// Calculate difference in milliseconds
-	const diffMs = now.getTime() - date.getTime()
+	// Calculate difference in milliseconds using adjusted date
+	const diffMs = now.getTime() - adjustedDate.getTime()
 	const diffMins = Math.floor(diffMs / (1000 * 60))
 	const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
 	const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
