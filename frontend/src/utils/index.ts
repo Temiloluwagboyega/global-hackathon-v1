@@ -59,6 +59,7 @@ export const formatTimestamp = (timestamp: string): string => {
 	// 1. With microseconds and timezone: '2025-10-05T01:57:35.390000+01:00'
 	// 2. With microseconds only: '2025-10-04T21:49:33.066000'
 	// 3. Standard ISO: '2025-10-04T21:49:33.066Z'
+	// 4. ISO without timezone: '2025-10-05T01:46:13.478000'
 	
 	let normalizedTimestamp = timestamp
 	
@@ -89,7 +90,7 @@ export const formatTimestamp = (timestamp: string): string => {
 		}
 	}
 	
-	// Create Date object directly from the timestamp (preserves timezone)
+	// Create Date object directly from the timestamp
 	const date = new Date(normalizedTimestamp)
 	const now = new Date()
 	
