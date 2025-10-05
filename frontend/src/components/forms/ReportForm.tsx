@@ -5,7 +5,7 @@ import { useCreateReport } from '../../hooks/api/useReports'
 import { useGeolocation } from '../../hooks/geolocation/useGeolocation'
 import { isValidImageFile, formatFileSize } from '../../utils'
 import type { DisasterType, Coordinates } from '../../types'
-import toast from 'react-hot-toast'
+import { showAlert } from '../layout/AlertBanner'
 
 interface ReportFormProps {
 	onSuccess?: () => void
@@ -62,7 +62,11 @@ export const ReportForm = ({ onSuccess, onCancel, initialLocation }: ReportFormP
 		if (!file) return
 
 		if (!isValidImageFile(file)) {
-			toast.error('Please select a valid image file (JPEG, PNG, GIF, WebP) under 5MB')
+			showAlert({
+				type: 'error',
+				title: 'Invalid File',
+				message: 'Please select a valid image file (JPEG, PNG, GIF, WebP) under 5MB'
+			})
 			return
 		}
 
@@ -88,12 +92,20 @@ export const ReportForm = ({ onSuccess, onCancel, initialLocation }: ReportFormP
 		e.preventDefault()
 		
 		if (!formData.type) {
-			toast.error('Please select a disaster type')
+			showAlert({
+				type: 'error',
+				title: 'Missing Information',
+				message: 'Please select a disaster type'
+			})
 			return
 		}
 
 		if (!formData.description.trim()) {
-			toast.error('Please provide a description')
+			showAlert({
+				type: 'error',
+				title: 'Missing Information',
+				message: 'Please provide a description'
+			})
 			return
 		}
 
@@ -110,16 +122,28 @@ export const ReportForm = ({ onSuccess, onCancel, initialLocation }: ReportFormP
 				imageFile: imageFile || undefined,
 			})
 
-			toast.success('Report submitted successfully!')
+			showAlert({
+				type: 'success',
+				title: 'Report Submitted',
+				message: 'Your disaster report has been submitted successfully!'
+			})
 			onSuccess?.()
 		} catch (error) {
 			console.error('Report submission error:', error)
 			// Check if the error is actually a success (sometimes the response parsing fails)
 			if (error instanceof Error && error.message.includes('success')) {
-				toast.success('Report submitted successfully!')
+				showAlert({
+					type: 'success',
+					title: 'Report Submitted',
+					message: 'Your disaster report has been submitted successfully!'
+				})
 				onSuccess?.()
 			} else {
-				toast.error('Failed to submit report. Please try again.')
+				showAlert({
+					type: 'error',
+					title: 'Submission Failed',
+					message: 'Failed to submit report. Please try again.'
+				})
 			}
 		}
 	}

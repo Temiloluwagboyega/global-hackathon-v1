@@ -15,11 +15,22 @@ interface AlertBannerProps {
 
 interface AlertState {
 	id: string
-	report: DisasterReport
-	distance: number
+	report?: DisasterReport
+	distance?: number
 	dismissed: boolean
-	type: 'new_report' | 'status_update'
+	type: 'new_report' | 'status_update' | 'success' | 'error' | 'info'
 	previousStatus?: string
+	message?: string
+	title?: string
+}
+
+// Global function to show alerts
+let showAlertFunction: ((alert: Omit<AlertState, 'id' | 'dismissed'>) => void) | null = null
+
+export const showAlert = (alert: Omit<AlertState, 'id' | 'dismissed'>) => {
+	if (showAlertFunction) {
+		showAlertFunction(alert)
+	}
 }
 
 export const AlertBanner = ({ userLocation, reports, onDismiss, className }: AlertBannerProps) => {
@@ -28,6 +39,27 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 	const [seenUpdateIds, setSeenUpdateIds] = useState<Set<string>>(new Set())
 	const nearbyReports = useNearbyReports(userLocation, reports, 5) // 5km radius
 	const reportUpdates = useReportUpdates(reports)
+
+	// Set up global alert function
+	useEffect(() => {
+		showAlertFunction = (alert: Omit<AlertState, 'id' | 'dismissed'>) => {
+			const newAlert: AlertState = {
+				...alert,
+				id: `custom-${Date.now()}-${Math.random()}`,
+				dismissed: false
+			}
+			setAlerts(prev => [...prev, newAlert])
+			
+			// Auto-dismiss after 5 seconds
+			setTimeout(() => {
+				dismissAlert(newAlert.id)
+			}, 5000)
+		}
+		
+		return () => {
+			showAlertFunction = null
+		}
+	}, [])
 
 	const dismissAlert = (alertId: string) => {
 		setAlerts(prev => 
@@ -144,46 +176,95 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 	// Only show the most recent alert
 	const currentAlert = activeAlerts[activeAlerts.length - 1]
 
-	// Determine alert styling based on status
+	// Determine alert styling based on type and status
 	const getAlertStyling = (alert: AlertState) => {
-		// For new reports, use red (active status)
-		// For status updates, use the report's current status color
-		const status = alert.type === 'new_report' ? 'active' : alert.report.status
+		// Handle custom alert types first
+		if (alert.type === 'success') {
+			return {
+				bgColor: 'bg-green-50',
+				borderColor: 'border-green-200',
+				iconColor: 'text-green-600',
+				titleColor: 'text-green-800',
+				textColor: 'text-green-700',
+				icon: CheckCircle,
+				title: alert.title || 'Success'
+			}
+		}
 		
-		switch (status) {
-			case 'resolved':
-				return {
-					bgColor: 'bg-green-50',
-					borderColor: 'border-green-200',
-					iconColor: 'text-green-600',
-					titleColor: 'text-green-800',
-					textColor: 'text-green-700',
-					icon: CheckCircle,
-					title: 'Report Resolved'
-				}
-			case 'investigating':
-				return {
-					bgColor: 'bg-yellow-50',
-					borderColor: 'border-yellow-200',
-					iconColor: 'text-yellow-600',
-					titleColor: 'text-yellow-800',
-					textColor: 'text-yellow-700',
-					icon: Clock,
-					title: 'Under Investigation'
-				}
-			case 'active':
-			default:
-				return {
-					bgColor: 'bg-red-50',
-					borderColor: 'border-red-200',
-					iconColor: 'text-red-600',
-					titleColor: 'text-red-800',
-					textColor: 'text-red-700',
-					icon: AlertTriangle,
-					title: alert.type === 'new_report' 
-						? `${getDisasterDisplayName(alert.report.type)} Alert`
-						: 'Report Active'
-				}
+		if (alert.type === 'error') {
+			return {
+				bgColor: 'bg-red-50',
+				borderColor: 'border-red-200',
+				iconColor: 'text-red-600',
+				titleColor: 'text-red-800',
+				textColor: 'text-red-700',
+				icon: AlertTriangle,
+				title: alert.title || 'Error'
+			}
+		}
+		
+		if (alert.type === 'info') {
+			return {
+				bgColor: 'bg-blue-50',
+				borderColor: 'border-blue-200',
+				iconColor: 'text-blue-600',
+				titleColor: 'text-blue-800',
+				textColor: 'text-blue-700',
+				icon: Clock,
+				title: alert.title || 'Information'
+			}
+		}
+		
+		// For report-related alerts, use the report's status
+		if (alert.report) {
+			const status = alert.type === 'new_report' ? 'active' : alert.report.status
+			
+			switch (status) {
+				case 'resolved':
+					return {
+						bgColor: 'bg-green-50',
+						borderColor: 'border-green-200',
+						iconColor: 'text-green-600',
+						titleColor: 'text-green-800',
+						textColor: 'text-green-700',
+						icon: CheckCircle,
+						title: 'Report Resolved'
+					}
+				case 'investigating':
+					return {
+						bgColor: 'bg-yellow-50',
+						borderColor: 'border-yellow-200',
+						iconColor: 'text-yellow-600',
+						titleColor: 'text-yellow-800',
+						textColor: 'text-yellow-700',
+						icon: Clock,
+						title: 'Under Investigation'
+					}
+				case 'active':
+				default:
+					return {
+						bgColor: 'bg-red-50',
+						borderColor: 'border-red-200',
+						iconColor: 'text-red-600',
+						titleColor: 'text-red-800',
+						textColor: 'text-red-700',
+						icon: AlertTriangle,
+						title: alert.type === 'new_report' 
+							? `${getDisasterDisplayName(alert.report.type)} Alert`
+							: 'Report Active'
+					}
+			}
+		}
+		
+		// Default fallback
+		return {
+			bgColor: 'bg-gray-50',
+			borderColor: 'border-gray-200',
+			iconColor: 'text-gray-600',
+			titleColor: 'text-gray-800',
+			textColor: 'text-gray-700',
+			icon: Clock,
+			title: 'Notification'
 		}
 	}
 
@@ -207,29 +288,36 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 					
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2 mb-1">
-							<span className="text-sm">{getDisasterEmoji(currentAlert.report.type)}</span>
+							{currentAlert.report && (
+								<span className="text-sm">{getDisasterEmoji(currentAlert.report.type)}</span>
+							)}
 							<h3 className={cn('text-xs font-semibold', styling.titleColor)}>
 								{styling.title}
 							</h3>
 						</div>
 						
 						<p className={cn('text-xs mb-1 line-clamp-2', styling.textColor)}>
-							{currentAlert.type === 'new_report' 
-								? currentAlert.report.description
-								: `${getDisasterDisplayName(currentAlert.report.type)} report status changed${
-									currentAlert.previousStatus 
-										? ` from ${currentAlert.previousStatus} to ${currentAlert.report.status}`
-										: ` to ${currentAlert.report.status}`
-								}`
-							}
+							{currentAlert.message || (
+								currentAlert.type === 'new_report' 
+									? currentAlert.report?.description
+									: currentAlert.report 
+										? `${getDisasterDisplayName(currentAlert.report.type)} report status changed${
+											currentAlert.previousStatus 
+												? ` from ${currentAlert.previousStatus} to ${currentAlert.report.status}`
+												: ` to ${currentAlert.report.status}`
+										}`
+										: 'Notification'
+							)}
 						</p>
 						
-						<div className="flex items-center gap-2 text-xs">
-							<div className={cn('flex items-center gap-1', styling.textColor)}>
-								<MapPin className="h-3 w-3" />
-								<span>{formatDistance(currentAlert.distance)} away</span>
+						{currentAlert.distance !== undefined && (
+							<div className="flex items-center gap-2 text-xs">
+								<div className={cn('flex items-center gap-1', styling.textColor)}>
+									<MapPin className="h-3 w-3" />
+									<span>{formatDistance(currentAlert.distance)} away</span>
+								</div>
 							</div>
-						</div>
+						)}
 					</div>
 					
 					<button

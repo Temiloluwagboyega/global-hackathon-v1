@@ -5,7 +5,7 @@ import { getDisasterEmoji, getDisasterDisplayName, getStatusColor, formatDistanc
 import { useReporterId, useUpdateReportStatus } from '../../hooks/api/useReports'
 import { useRealTimeTimestamp } from '../../hooks/utils/useRealTimeTimestamp'
 import type { DisasterReport } from '../../types'
-import toast from 'react-hot-toast'
+import { showAlert } from '../layout/AlertBanner'
 
 interface DisasterCardProps {
 	report: DisasterReport
@@ -74,41 +74,19 @@ export const DisasterCard = ({ report, userLocation, onClick, className }: Disas
 				investigating: '🔍'
 			}
 			
-			// Show different colored toasts based on status
-			if (newStatus === 'resolved') {
-				toast.success(statusMessages[newStatus], {
-					duration: 4000,
-					style: {
-						background: '#dcfce7',
-						color: '#166534',
-						border: '1px solid #bbf7d0'
-					},
-					icon: statusIcons[newStatus]
-				})
-			} else if (newStatus === 'investigating') {
-				toast(statusMessages[newStatus], {
-					duration: 4000,
-					style: {
-						background: '#dbeafe',
-						color: '#1e40af',
-						border: '1px solid #bfdbfe'
-					},
-					icon: statusIcons[newStatus]
-				})
-			} else {
-				toast(statusMessages[newStatus], {
-					duration: 4000,
-					style: {
-						background: '#fef3c7',
-						color: '#92400e',
-						border: '1px solid #fde68a'
-					},
-					icon: statusIcons[newStatus]
-				})
-			}
+			// Show status update alert
+			showAlert({
+				type: 'success',
+				title: 'Status Updated',
+				message: statusMessages[newStatus]
+			})
 		} catch (error) {
 			console.error('Failed to update status:', error)
-			toast.error('Failed to update status. Please try again.')
+			showAlert({
+				type: 'error',
+				title: 'Update Failed',
+				message: 'Failed to update status. Please try again.'
+			})
 		}
 	}
 
