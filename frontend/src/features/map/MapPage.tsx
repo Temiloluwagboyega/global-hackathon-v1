@@ -82,8 +82,8 @@ const MapPage = () => {
 		setSelectedLocation(null)
 	}
 
-	const handleWelcomeModalContinue = async () => {
-		await markWelcomeModalViewed()
+	const handleWelcomeModalContinue = () => {
+		markWelcomeModalViewed()
 	}
 
 	const handleWelcomeModalClose = () => {

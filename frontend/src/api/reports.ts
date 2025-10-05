@@ -116,23 +116,4 @@ export const reportsApi = {
 			throw new Error(handleApiError(error))
 		}
 	},
-
-	// Welcome modal tracking
-	checkWelcomeModalViewed: async (): Promise<{ has_viewed: boolean; viewed_at?: string; ip_address: string }> => {
-		try {
-			const response = await apiClient.get('/welcome/check/')
-			return response.data
-		} catch (error) {
-			throw new Error(handleApiError(error))
-		}
-	},
-
-	markWelcomeModalViewed: async (): Promise<{ success: boolean; message: string; viewed_at: string; ip_address: string }> => {
-		try {
-			const response = await apiClient.post('/welcome/mark-viewed/')
-			return response.data
-		} catch (error) {
-			throw new Error(handleApiError(error))
-		}
-	},
 }
