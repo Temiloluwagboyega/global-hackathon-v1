@@ -157,7 +157,7 @@ export const ReportForm = ({ onSuccess, onCancel, initialLocation }: ReportFormP
 				<label className="block text-sm font-medium text-gray-700 mb-2">
 					Disaster Type *
 				</label>
-				<div className="grid grid-cols-2 gap-3">
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 					{disasterTypes.map((type) => (
 						<button
 							key={type.value}
@@ -304,7 +304,7 @@ export const ReportForm = ({ onSuccess, onCancel, initialLocation }: ReportFormP
 			</div>
 
 			{/* Submit Buttons */}
-			<div className="flex gap-3 pt-4">
+			<div className="flex flex-col sm:flex-row gap-3 pt-4">
 				<Button
 					type="submit"
 					disabled={!isFormValid || createReportMutation.isPending}
@@ -320,6 +320,7 @@ export const ReportForm = ({ onSuccess, onCancel, initialLocation }: ReportFormP
 						variant="secondary"
 						onClick={onCancel}
 						disabled={createReportMutation.isPending}
+						className="w-full sm:w-auto"
 					>
 						Cancel
 					</Button>

@@ -52,15 +52,10 @@ export const getStatusColor = (status: 'active' | 'resolved' | 'investigating'):
 }
 
 /**
- * Format timestamp for display
+ * Format timestamp for display (converts UTC to user's local timezone)
  */
 export const formatTimestamp = (timestamp: string): string => {
-	// Handle various timestamp formats:
-	// 1. With microseconds and timezone: '2025-10-05T01:57:35.390000+01:00'
-	// 2. With microseconds only: '2025-10-04T21:49:33.066000'
-	// 3. Standard ISO: '2025-10-04T21:49:33.066Z'
-	// 4. ISO without timezone: '2025-10-05T01:46:13.478000'
-	
+	// Handle various timestamp formats and normalize them
 	let normalizedTimestamp = timestamp
 	
 	// Handle microseconds (more than 3 digits after decimal point)
@@ -90,7 +85,7 @@ export const formatTimestamp = (timestamp: string): string => {
 		}
 	}
 	
-	// Create Date object directly from the timestamp
+	// Create Date object from the timestamp (handles UTC conversion automatically)
 	const date = new Date(normalizedTimestamp)
 	const now = new Date()
 	
@@ -105,14 +100,15 @@ export const formatTimestamp = (timestamp: string): string => {
 		console.log('Timestamp debug:', {
 			original: timestamp,
 			normalized: normalizedTimestamp,
-			date: date.toISOString(),
+			utcDate: date.toISOString(),
+			localDate: date.toString(),
 			now: now.toISOString(),
-			dateLocal: date.toString(),
-			nowLocal: now.toString()
+			nowLocal: now.toString(),
+			userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
 		})
 	}
 	
-	// Calculate difference in milliseconds
+	// Calculate difference in milliseconds (both dates are in local timezone)
 	const diffMs = now.getTime() - date.getTime()
 	const diffMins = Math.floor(diffMs / (1000 * 60))
 	const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
@@ -127,12 +123,13 @@ export const formatTimestamp = (timestamp: string): string => {
 	} else if (diffDays < 7) {
 		return `${diffDays}d ago`
 	} else {
+		// Use local date formatting
 		return date.toLocaleDateString()
 	}
 }
 
 /**
- * Format timestamp for detailed display
+ * Format timestamp for detailed display (converts UTC to user's local timezone)
  */
 export const formatDetailedTimestamp = (timestamp: string): string => {
 	const date = new Date(timestamp)
@@ -143,6 +140,7 @@ export const formatDetailedTimestamp = (timestamp: string): string => {
 		day: 'numeric',
 		hour: '2-digit',
 		minute: '2-digit',
+		timeZoneName: 'short', // Shows timezone abbreviation (e.g., EST, PST)
 	})
 }
 

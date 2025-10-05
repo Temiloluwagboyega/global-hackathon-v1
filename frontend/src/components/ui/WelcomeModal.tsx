@@ -3,6 +3,7 @@ import { MapPin, AlertTriangle, Camera, Users, Brain, Shield, ArrowRight, CheckC
 import { Modal } from './Modal'
 import { Button } from './Button'
 import { cn } from '../../utils/cn'
+import logo from '../../assets/logo.png'
 
 interface WelcomeModalProps {
 	isOpen: boolean
@@ -86,8 +87,8 @@ export const WelcomeModal = ({ isOpen, onClose, onContinue }: WelcomeModalProps)
 					<div className="text-center space-y-6">
 						{/* Hero Section */}
 						<div className="space-y-4">
-							<div className="mx-auto w-20 h-20 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center">
-								<AlertTriangle className="h-10 w-10 text-white" />
+							<div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center">
+								<img src={logo} alt="Disaster Response Map" className="h-15 w-15 rounded-full" />
 							</div>
 							<h1 className="text-3xl font-bold text-gray-900">
 								Welcome to Disaster Response Map
@@ -99,7 +100,7 @@ export const WelcomeModal = ({ isOpen, onClose, onContinue }: WelcomeModalProps)
 						</div>
 
 						{/* Key Stats */}
-						<div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+						<div className="grid md:grid-cols-3 grid-cols-1 gap-2 sm:gap-4 max-w-md mx-auto">
 							<div className="text-center">
 								<div className="text-2xl font-bold text-blue-600">24/7</div>
 								<div className="text-sm text-gray-600">Monitoring</div>
@@ -129,7 +130,7 @@ export const WelcomeModal = ({ isOpen, onClose, onContinue }: WelcomeModalProps)
 						</div>
 
 						{/* Features Grid */}
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto">
 							{features.map((feature, index) => {
 								const Icon = feature.icon
 								return (
@@ -181,7 +182,7 @@ export const WelcomeModal = ({ isOpen, onClose, onContinue }: WelcomeModalProps)
 						</div>
 
 						{/* Quick Tips */}
-						<div className="bg-blue-50 rounded-lg p-4 max-w-md mx-auto">
+						<div className="bg-blue-50 rounded-lg p-3 sm:p-4 max-w-md mx-auto">
 							<h3 className="font-semibold text-blue-900 mb-2">Quick Tips:</h3>
 							<ul className="text-sm text-blue-800 space-y-1 text-left">
 								<li>• Click anywhere on the map to report an incident</li>
@@ -203,7 +204,7 @@ export const WelcomeModal = ({ isOpen, onClose, onContinue }: WelcomeModalProps)
 			isOpen={isOpen}
 			onClose={onClose}
 			size="xl"
-			className="max-w-4xl"
+			className="max-w-4xl mx-2 sm:mx-0"
 		>
 			<div className="space-y-6">
 				{/* Progress Bar */}
@@ -222,16 +223,16 @@ export const WelcomeModal = ({ isOpen, onClose, onContinue }: WelcomeModalProps)
 				</div>
 
 				{/* Step Content */}
-				<div className="min-h-[400px] flex items-center justify-center">
+				<div className="min-h-[300px] sm:min-h-[400px] flex items-center justify-center">
 					{renderStep()}
 				</div>
 
 				{/* Navigation */}
-				<div className="flex items-center justify-between pt-4 border-t border-gray-200">
+				<div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-gray-200 gap-3 sm:gap-0">
 					<div>
 						{currentStep > 0 && (
 							<Button
-								variant="outline"
+								variant="secondary"
 								onClick={handlePrevious}
 								disabled={isCompleting}
 							>
@@ -240,7 +241,7 @@ export const WelcomeModal = ({ isOpen, onClose, onContinue }: WelcomeModalProps)
 						)}
 					</div>
 
-					<div className="flex items-center space-x-3">
+					<div className="flex items-center space-x-2 sm:space-x-3">
 						{currentStep < 2 ? (
 							<Button
 								onClick={handleNext}

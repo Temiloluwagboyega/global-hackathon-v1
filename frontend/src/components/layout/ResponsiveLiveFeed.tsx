@@ -319,12 +319,36 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 				<div className="p-4 border-b border-gray-200">
 					<div className="flex items-center justify-between mb-3">
 						<h2 className="text-lg font-semibold text-gray-900">Live Feed</h2>
-						<button
-							onClick={() => setIsOpen(false)}
-							className="text-gray-400 hover:text-gray-600"
-						>
-							<X className="h-5 w-5" />
-						</button>
+						<div className="flex items-center gap-2">
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => setShowFilters(!showFilters)}
+								className={cn(
+									'h-8 w-8 p-0',
+									showFilters && 'bg-gray-100'
+								)}
+							>
+								<Filter className="h-4 w-4" />
+							</Button>
+							
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => refetch()}
+								loading={isFetching}
+								className="h-8 w-8 p-0"
+							>
+								<RefreshCw className="h-4 w-4" />
+							</Button>
+							
+							<button
+								onClick={() => setIsOpen(false)}
+								className="text-gray-400 hover:text-gray-600"
+							>
+								<X className="h-5 w-5" />
+							</button>
+						</div>
 					</div>
 
 					{/* Mobile Stats */}
@@ -342,6 +366,92 @@ export const ResponsiveLiveFeed = ({ userLocation, onReportClick, className }: R
 						)}
 					</div>
 				</div>
+
+				{/* Mobile Filters */}
+				{showFilters && (
+					<div className="p-4 border-b border-gray-200 bg-gray-50">
+						<div className="flex items-center justify-between mb-3">
+							<h3 className="text-sm font-medium text-gray-700">Filters</h3>
+							{(selectedTypes.length > 0 || radiusFilter) && (
+								<button
+									onClick={clearFilters}
+									className="text-xs text-gray-600 hover:text-gray-800"
+								>
+									Clear all
+								</button>
+							)}
+						</div>
+						
+						{/* Radius Filter */}
+						<div className="mb-4">
+							<div className="flex items-center gap-2 mb-2">
+								<MapPin className="h-4 w-4 text-gray-600" />
+								<h4 className="text-sm font-medium text-gray-700">
+									{userLocation ? 'Distance from you' : 'Filter by radius'}
+								</h4>
+							</div>
+							{!userLocation && (
+								<p className="text-xs text-gray-500 mb-2">
+									Enable location access to filter by distance from your current location
+								</p>
+							)}
+							<div className="grid grid-cols-3 gap-2">
+								{[5, 10, 25].map((radius) => (
+								<button
+									key={radius}
+									onClick={() => {
+										const newFilter = radiusFilter === radius ? null : radius
+										console.log(`Setting radius filter to: ${newFilter}km`)
+										setRadiusFilter(newFilter)
+									}}
+									disabled={!userLocation}
+									className={cn(
+										'px-3 py-2 text-xs rounded transition-colors',
+										!userLocation && 'opacity-50 cursor-not-allowed',
+										radiusFilter === radius
+											? 'bg-blue-100 text-blue-800 border border-blue-300'
+											: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+									)}
+								>
+									{radius} km
+								</button>
+								))}
+							</div>
+						</div>
+						
+						{/* Type Filter */}
+						<div>
+							<h4 className="text-sm font-medium text-gray-700 mb-2">Disaster Type</h4>
+							<div className="grid grid-cols-2 gap-2">
+								{disasterTypes.map((type) => {
+									const count = getTypeCount(type)
+									const isSelected = selectedTypes.includes(type)
+									
+									return (
+										<button
+											key={type}
+											onClick={() => toggleTypeFilter(type)}
+										className={cn(
+											'flex items-center justify-between p-2 rounded text-sm transition-colors',
+											isSelected
+												? 'bg-gray-100 text-gray-800 border border-gray-300'
+												: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+										)}
+										>
+											<span>{getDisasterDisplayName(type)}</span>
+											<span className={cn(
+												'text-xs px-1.5 py-0.5 rounded',
+												isSelected ? 'bg-gray-200' : 'bg-gray-100'
+											)}>
+												{count}
+											</span>
+										</button>
+									)
+								})}
+							</div>
+						</div>
+					</div>
+				)}
 
 				{/* Mobile Reports List */}
 				<div className="flex-1 overflow-y-auto">

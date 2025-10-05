@@ -159,10 +159,9 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 		
 		if timestamp_str:
 			try:
-				# Store timestamp exactly as received - no conversion
-				# Parse the timestamp preserving timezone info
-				created_at = datetime.fromisoformat(timestamp_str)
-				print(f"Successfully parsed timestamp: {created_at}")
+				# Parse UTC timestamp and store as-is
+				created_at = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+				print(f"Successfully parsed UTC timestamp: {created_at}")
 				print(f"Created_at type: {type(created_at)}")
 				print(f"Timezone info: {created_at.tzinfo}")
 				print(f"Original timestamp string: {timestamp_str}")

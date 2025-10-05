@@ -48,12 +48,7 @@ export const Modal = ({
 
 	if (!isOpen) return null
 
-	const sizes = {
-		sm: 'max-w-md',
-		md: 'max-w-lg',
-		lg: 'max-w-2xl',
-		xl: 'max-w-4xl',
-	}
+
 
 	const modalContent = (
 		<div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
@@ -68,8 +63,14 @@ export const Modal = ({
 			<div
 				ref={modalRef}
 				className={cn(
-					'relative w-full bg-white rounded-lg shadow-xl transform transition-all',
-					sizes[size],
+					'relative w-full bg-white rounded-lg shadow-xl transform transition-all max-h-[90vh] overflow-y-auto',
+					// Mobile responsive sizing
+					'mx-4 sm:mx-0',
+					// Size classes with mobile adjustments
+					size === 'sm' && 'max-w-md',
+					size === 'md' && 'max-w-lg',
+					size === 'lg' && 'max-w-2xl',
+					size === 'xl' && 'max-w-4xl',
 					className
 				)}
 				role="dialog"
