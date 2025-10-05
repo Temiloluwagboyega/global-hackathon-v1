@@ -1,6 +1,29 @@
-# 🚀 ACTA Global Hackathon
+# 🚨 Disaster Response Map
 
-**24 hours to build something impressive.**
+**Real-time disaster reporting and mapping platform with AI-powered insights**
+
+A comprehensive disaster response system that enables citizens to report emergencies (floods, fires, accidents, building collapses) and view them on an interactive map. Features AI-generated summaries, real-time updates, proximity alerts, and live feed monitoring.
+
+## 🤖 AI Features
+- **AI Summary**: Automated analysis of disaster patterns using Hugging Face models
+- **Smart Insights**: 24-hour activity summaries with safety recommendations
+- **Pattern Recognition**: Identifies trends and provides actionable intelligence
+
+## 🚀 Key Features
+- Interactive map with real-time disaster markers
+- Citizen reporting with geolocation and photo upload
+- Proximity alerts for nearby emergencies
+- Live feed with filtering and status updates
+- Responsive design for mobile and desktop
+- RESTful API with MongoDB backend
+
+## 🛠️ Tech Stack
+- **Frontend**: React 19, TypeScript, Tailwind CSS, React Leaflet
+- **Backend**: Django REST Framework, MongoDB, Cloudinary
+- **AI**: Hugging Face Inference API for intelligent summaries
+- **Deployment**: Render (backend), Vercel (frontend)
+
+Built for the ACTA Global Hackathon 2025 - 24 hours to build something impressive.
 
 ## ⏰ Timeline
 

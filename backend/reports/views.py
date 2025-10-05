@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView, UpdateAPIView
 from mongoengine import Q
-from .models import DisasterReport
+from .models import DisasterReport, WelcomeModalView
 from .serializers import (
 	DisasterReportSerializer,
 	CreateDisasterReportSerializer,
@@ -652,4 +652,96 @@ def cleanup_resolved_reports_view(request):
 		return Response({
 			'success': False,
 			'error': f'Failed to cleanup resolved reports: {str(e)}'
+		}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def check_welcome_modal_viewed(request):
+	"""
+	Check if the welcome modal has been viewed by this IP address.
+	"""
+	try:
+		# Get IP address
+		x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+		if x_forwarded_for:
+			ip = x_forwarded_for.split(',')[0].strip()
+		else:
+			ip = request.META.get('REMOTE_ADDR', '')
+		
+		if not ip:
+			return Response({
+				'has_viewed': False,
+				'error': 'Could not determine IP address'
+			}, status=status.HTTP_400_BAD_REQUEST)
+		
+		# Check if IP has viewed the welcome modal
+		view_record = WelcomeModalView.objects(ip_address=ip).first()
+		
+		return Response({
+			'has_viewed': view_record is not None,
+			'viewed_at': view_record.viewed_at.isoformat() if view_record else None,
+			'ip_address': ip
+		})
+		
+	except Exception as e:
+		print(f"Error in check_welcome_modal_viewed: {e}")
+		return Response({
+			'has_viewed': False,
+			'error': 'Failed to check welcome modal status'
+		}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def mark_welcome_modal_viewed(request):
+	"""
+	Mark that the welcome modal has been viewed by this IP address.
+	"""
+	try:
+		# Get IP address
+		x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+		if x_forwarded_for:
+			ip = x_forwarded_for.split(',')[0].strip()
+		else:
+			ip = request.META.get('REMOTE_ADDR', '')
+		
+		if not ip:
+			return Response({
+				'success': False,
+				'error': 'Could not determine IP address'
+			}, status=status.HTTP_400_BAD_REQUEST)
+		
+		# Get user agent
+		user_agent = request.META.get('HTTP_USER_AGENT', '')
+		
+		# Check if record already exists
+		view_record = WelcomeModalView.objects(ip_address=ip).first()
+		
+		if view_record:
+			# Update existing record
+			view_record.last_seen = timezone.now()
+			view_record.save()
+			message = 'Welcome modal view updated'
+		else:
+			# Create new record
+			view_record = WelcomeModalView(
+				ip_address=ip,
+				user_agent=user_agent
+			)
+			view_record.save()
+			message = 'Welcome modal view recorded'
+		
+		return Response({
+			'success': True,
+			'message': message,
+			'viewed_at': view_record.viewed_at.isoformat(),
+			'ip_address': ip
+		})
+		
+	except Exception as e:
+		print(f"Error in mark_welcome_modal_viewed: {e}")
+		return Response({
+			'success': False,
+			'error': 'Failed to record welcome modal view'
 		}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

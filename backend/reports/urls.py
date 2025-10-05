@@ -23,4 +23,8 @@ urlpatterns = [
 	
 	# Cleanup endpoint
 	path('cleanup/resolved/', views.cleanup_resolved_reports_view, name='cleanup-resolved-reports'),
+	
+	# Welcome modal tracking
+	path('welcome/check/', views.check_welcome_modal_viewed, name='check-welcome-modal'),
+	path('welcome/mark-viewed/', views.mark_welcome_modal_viewed, name='mark-welcome-modal-viewed'),
 ]

@@ -6,9 +6,11 @@ import { ResponsiveLiveFeed } from '../../components/layout/ResponsiveLiveFeed'
 import { AlertBanner } from '../../components/layout/AlertBanner'
 import { FloatingAISummary } from '../../components/layout/FloatingAISummary'
 import { Modal } from '../../components/ui/Modal'
+import { WelcomeModal } from '../../components/ui/WelcomeModal'
 import { ReportForm } from '../../components/forms/ReportForm'
 import { useReports } from '../../hooks/api/useReports'
 import { useGeolocation } from '../../hooks/geolocation/useGeolocation'
+import { useWelcomeModal } from '../../hooks/ui/useWelcomeModal'
 import type { DisasterReport, Coordinates } from '../../types'
 
 const MapPage = () => {
@@ -20,6 +22,7 @@ const MapPage = () => {
 
 	const { data: reportsData } = useReports()
 	const { location: userLocation, getCurrentPosition, loading: locationLoading, error: geoError } = useGeolocation()
+	const { shouldShow: shouldShowWelcome, markWelcomeModalViewed, hideWelcomeModal } = useWelcomeModal()
 
 	const reports = reportsData?.reports || []
 	
@@ -77,6 +80,14 @@ const MapPage = () => {
 	const handleReportCancel = () => {
 		setShowReportForm(false)
 		setSelectedLocation(null)
+	}
+
+	const handleWelcomeModalContinue = async () => {
+		await markWelcomeModalViewed()
+	}
+
+	const handleWelcomeModalClose = () => {
+		hideWelcomeModal()
 	}
 
 	return (
@@ -155,6 +166,13 @@ const MapPage = () => {
 					initialLocation={selectedLocation}
 				/>
 			</Modal>
+
+			{/* Welcome Modal */}
+			<WelcomeModal
+				isOpen={shouldShowWelcome}
+				onClose={handleWelcomeModalClose}
+				onContinue={handleWelcomeModalContinue}
+			/>
 
 		</div>
 	)
