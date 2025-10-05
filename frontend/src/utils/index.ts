@@ -105,10 +105,13 @@ export const formatTimestamp = (timestamp: string): string => {
 			original: timestamp,
 			normalized: normalizedTimestamp,
 			date: date.toISOString(),
-			now: now.toISOString()
+			now: now.toISOString(),
+			dateLocal: date.toString(),
+			nowLocal: now.toString()
 		})
 	}
 	
+	// Calculate difference in milliseconds
 	const diffMs = now.getTime() - date.getTime()
 	const diffMins = Math.floor(diffMs / (1000 * 60))
 	const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
