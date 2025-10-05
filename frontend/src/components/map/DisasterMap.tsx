@@ -103,6 +103,10 @@ export const DisasterMap = ({
 	className 
 }: DisasterMapProps) => {
 	const [mapCenter, setMapCenter] = useState<Coordinates>(center || { lat: 6.5244, lng: 3.3792 }) // Lagos default
+	
+	// Debug user location in map component
+	console.log('DisasterMap - userLocation:', userLocation)
+	console.log('DisasterMap - center:', center)
 
 	useEffect(() => {
 		if (center) {

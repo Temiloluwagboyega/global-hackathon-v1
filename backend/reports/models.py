@@ -53,7 +53,6 @@ class DisasterReport(Document):
 		help_text='Optional identifier for the reporter'
 	)
 	created_at = fields.DateTimeField(
-		default=timezone.now,
 		help_text='When the report was created'
 	)
 	updated_at = fields.DateTimeField(

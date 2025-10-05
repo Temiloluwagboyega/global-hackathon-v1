@@ -16,19 +16,37 @@ const MapPage = () => {
 	const [showReportForm, setShowReportForm] = useState(false)
 	const [selectedReport, setSelectedReport] = useState<DisasterReport | null>(null)
 	const [selectedLocation, setSelectedLocation] = useState<Coordinates | null>(null)
-	const [mapCenter, setMapCenter] = useState<Coordinates>({ lat: 6.5244, lng: 3.3792 }) // Lagos default
+	const [mapCenter, setMapCenter] = useState<Coordinates | null>(null) // Start with null, will be set by user location
 	const [mapZoom, setMapZoom] = useState(13)
 
 	const { data: reportsData } = useReports()
-	const { location: userLocation } = useGeolocation()
+	const { location: userLocation, getCurrentPosition, loading: locationLoading, error: geoError } = useGeolocation()
 
 	const reports = reportsData?.reports || []
+	
+	// Debug user location
+	console.log('User location:', userLocation)
+	console.log('Location loading:', locationLoading)
+	console.log('Geo error:', geoError)
 
-	// Set map to user location on page load
+	// Automatically request user location on page load
+	useEffect(() => {
+		if (!userLocation && !locationLoading && !geoError) {
+			console.log('Requesting user location...')
+			getCurrentPosition()
+		}
+	}, [userLocation, locationLoading, geoError, getCurrentPosition])
+
+	// Set map to user location on page load with smooth transition
 	useEffect(() => {
 		if (userLocation) {
-			setMapCenter(userLocation)
-			setMapZoom(15) // Zoom in more when showing user location
+			// Add a small delay to ensure the map is fully loaded
+			const timer = setTimeout(() => {
+				setMapCenter(userLocation)
+				setMapZoom(15) // Zoom in more when showing user location
+			}, 500)
+			
+			return () => clearTimeout(timer)
 		}
 	}, [userLocation])
 
@@ -71,12 +89,29 @@ const MapPage = () => {
 			<div className="flex-1 flex overflow-hidden">
 				{/* Map */}
 				<div className="flex-1 relative">
+					{/* Location Loading Indicator */}
+					{locationLoading && (
+						<div className="absolute top-4 left-4 z-[9999] bg-white rounded-lg shadow-lg p-3 flex items-center gap-2">
+							<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+							<span className="text-sm text-gray-700">Getting your location...</span>
+						</div>
+					)}
+					
+					{/* Location Error Indicator */}
+					{geoError && (
+						<div className="absolute top-4 left-4 z-[9999] bg-red-50 border border-red-200 rounded-lg shadow-lg p-3">
+							<div className="text-sm text-red-700">
+								<p className="font-medium">Location access denied</p>
+								<p className="text-xs">Allow location access to see your position on the map</p>
+							</div>
+						</div>
+					)}
 					<DisasterMap
 						reports={reports}
 						userLocation={userLocation}
 						onMapClick={handleMapClick}
 						selectedReport={selectedReport}
-						center={mapCenter}
+						center={mapCenter || userLocation || { lat: 6.5244, lng: 3.3792 }}
 						zoom={mapZoom}
 						className="h-full"
 					/>

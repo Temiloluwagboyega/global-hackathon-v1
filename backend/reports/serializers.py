@@ -86,7 +86,7 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 	description = serializers.CharField()
 	reporter_id = serializers.CharField()
 	image = serializers.ImageField(required=False, allow_null=True)
-	timestamp = serializers.DateTimeField(required=False, allow_null=True)
+	timestamp = serializers.CharField(required=False, allow_null=True, write_only=True)
 	
 	class Meta:
 		model = DisasterReport
@@ -150,7 +150,11 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 		from datetime import datetime
 		
 		timestamp_str = validated_data.pop('timestamp', None)
+		print(f"=== TIMESTAMP DEBUG ===")
 		print(f"Received timestamp from frontend: {timestamp_str}")
+		print(f"Type: {type(timestamp_str)}")
+		print(f"Validated data keys: {list(validated_data.keys())}")
+		
 		if timestamp_str:
 			try:
 				# Handle different timestamp formats
@@ -158,13 +162,17 @@ class CreateDisasterReportSerializer(MongoEngineSerializer):
 					# Convert Z to +00:00 for fromisoformat
 					timestamp_str = timestamp_str.replace('Z', '+00:00')
 				created_at = datetime.fromisoformat(timestamp_str)
-				print(f"Parsed timestamp: {created_at}")
+				print(f"Successfully parsed timestamp: {created_at}")
+				print(f"Created_at type: {type(created_at)}")
 			except (ValueError, AttributeError) as e:
 				print(f"Failed to parse timestamp: {timestamp_str}, error: {e}, using current time")
 				created_at = timezone.now()
 		else:
 			print("No timestamp provided, using current time")
 			created_at = timezone.now()
+		
+		print(f"Final created_at: {created_at}")
+		print(f"=== END TIMESTAMP DEBUG ===")
 		
 		# Create the report
 		report = DisasterReport(
