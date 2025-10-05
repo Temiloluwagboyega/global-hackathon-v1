@@ -68,11 +68,7 @@ export const DisasterCard = ({ report, userLocation, onClick, className }: Disas
 				investigating: 'Report marked as under investigation'
 			}
 			
-			const statusIcons = {
-				active: '📋',
-				resolved: '✅',
-				investigating: '🔍'
-			}
+		
 			
 			// Show status update alert
 			showAlert({
