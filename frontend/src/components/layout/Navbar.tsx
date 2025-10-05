@@ -66,7 +66,7 @@ export const Navbar = ({ className }: NavbarProps) => {
 						) : (
 							<div className="flex items-center gap-1 text-red-600">
 								<div className="h-2 w-2 bg-red-500 rounded-full"></div>
-								<span className="hidden sm:inline"> r Offline</span>
+								<span className="hidden sm:inline"> Offline</span>
 							</div>
 						)}
 					</div>
