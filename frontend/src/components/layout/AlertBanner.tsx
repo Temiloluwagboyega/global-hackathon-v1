@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { AlertTriangle, X, MapPin } from 'lucide-react'
+import { AlertTriangle, X, MapPin, CheckCircle, Clock } from 'lucide-react'
 import { getDisasterEmoji, getDisasterDisplayName, formatDistance } from '../../utils'
 import { useNearbyReports } from '../../hooks/utils/useDistance'
+import { useReportUpdates } from '../../hooks/utils/useReportUpdates'
 import type { DisasterReport, UserLocation } from '../../types'
 import { cn } from '../../utils/cn'
 
@@ -17,12 +18,16 @@ interface AlertState {
 	report: DisasterReport
 	distance: number
 	dismissed: boolean
+	type: 'new_report' | 'status_update'
+	previousStatus?: string
 }
 
 export const AlertBanner = ({ userLocation, reports, onDismiss, className }: AlertBannerProps) => {
 	const [alerts, setAlerts] = useState<AlertState[]>([])
 	const [seenReportIds, setSeenReportIds] = useState<Set<string>>(new Set())
+	const [seenUpdateIds, setSeenUpdateIds] = useState<Set<string>>(new Set())
 	const nearbyReports = useNearbyReports(userLocation, reports, 5) // 5km radius
+	const reportUpdates = useReportUpdates(reports)
 
 	const dismissAlert = (alertId: string) => {
 		setAlerts(prev => 
@@ -35,6 +40,7 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 		onDismiss?.(alertId)
 	}
 
+	// Handle new reports
 	useEffect(() => {
 		if (!userLocation || nearbyReports.length === 0) {
 			return
@@ -60,6 +66,7 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 					report: reportData as DisasterReport,
 					distance: distance || 0,
 					dismissed: false,
+					type: 'new_report'
 				}
 			})
 
@@ -76,6 +83,58 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 		}
 	}, [userLocation, nearbyReports, seenReportIds])
 
+	// Handle status updates
+	useEffect(() => {
+		if (reportUpdates.length === 0) {
+			return
+		}
+
+		// Filter for nearby reports with status updates
+		const nearbyUpdates = reportUpdates.filter(update => {
+			const report = reports.find(r => r.id === update.reportId)
+			if (!report || !userLocation) return false
+			
+			// Check if report is within 5km
+			const distance = Math.sqrt(
+				Math.pow(report.location.lat - userLocation.lat, 2) +
+				Math.pow(report.location.lng - userLocation.lng, 2)
+			) * 111 // Rough conversion to km
+			
+			return distance <= 5 && !seenUpdateIds.has(update.reportId)
+		})
+
+		if (nearbyUpdates.length > 0) {
+			const latestUpdate = nearbyUpdates[nearbyUpdates.length - 1]
+			const report = reports.find(r => r.id === latestUpdate.reportId)
+			
+			if (report) {
+				// Mark this update as seen
+				setSeenUpdateIds(prev => new Set([...prev, latestUpdate.reportId]))
+				
+				const distance = userLocation ? Math.sqrt(
+					Math.pow(report.location.lat - userLocation.lat, 2) +
+					Math.pow(report.location.lng - userLocation.lng, 2)
+				) * 111 : 0
+				
+				const statusUpdateAlert: AlertState = {
+					id: `status-update-${latestUpdate.reportId}`,
+					report: report,
+					distance: distance,
+					dismissed: false,
+					type: 'status_update',
+					previousStatus: latestUpdate.previousStatus
+				}
+				
+				setAlerts(prev => [...prev, statusUpdateAlert])
+				
+				// Auto-dismiss after 5 seconds
+				setTimeout(() => {
+					dismissAlert(statusUpdateAlert.id)
+				}, 5000)
+			}
+		}
+	}, [reportUpdates, reports, userLocation, seenUpdateIds])
+
 	const activeAlerts = alerts.filter(alert => !alert.dismissed)
 
 	if (activeAlerts.length === 0) {
@@ -85,40 +144,117 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 	// Only show the most recent alert
 	const currentAlert = activeAlerts[activeAlerts.length - 1]
 
+	// Determine alert styling based on type
+	const getAlertStyling = (alert: AlertState) => {
+		if (alert.type === 'status_update') {
+			switch (alert.report.status) {
+				case 'resolved':
+					return {
+						bgColor: 'bg-green-50',
+						borderColor: 'border-green-200',
+						iconColor: 'text-green-600',
+						titleColor: 'text-green-800',
+						textColor: 'text-green-700',
+						icon: CheckCircle,
+						title: 'Report Resolved'
+					}
+				case 'investigating':
+					return {
+						bgColor: 'bg-yellow-50',
+						borderColor: 'border-yellow-200',
+						iconColor: 'text-yellow-600',
+						titleColor: 'text-yellow-800',
+						textColor: 'text-yellow-700',
+						icon: Clock,
+						title: 'Under Investigation'
+					}
+				default:
+					return {
+						bgColor: 'bg-blue-50',
+						borderColor: 'border-blue-200',
+						iconColor: 'text-blue-600',
+						titleColor: 'text-blue-800',
+						textColor: 'text-blue-700',
+						icon: AlertTriangle,
+						title: 'Status Updated'
+					}
+			}
+		} else {
+			return {
+				bgColor: 'bg-red-50',
+				borderColor: 'border-red-200',
+				iconColor: 'text-red-600',
+				titleColor: 'text-red-800',
+				textColor: 'text-red-700',
+				icon: AlertTriangle,
+				title: `${getDisasterDisplayName(alert.report.type)} Alert`
+			}
+		}
+	}
+
+	const styling = getAlertStyling(currentAlert)
+	const IconComponent = styling.icon
+
 	return (
 		<div className={cn('fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[9998] max-w-sm w-full px-4', className)}>
 			<div
-				className="bg-red-50 text-nowrap border border-red-200 rounded-lg p-3 shadow-lg animate-in slide-in-from-bottom-2 duration-500"
+				className={cn(
+					'text-nowrap border rounded-lg p-3 shadow-lg animate-in slide-in-from-bottom-2 duration-500',
+					styling.bgColor,
+					styling.borderColor
+				)}
 				role="alert"
 			>
 				<div className="flex items-center gap-2">
 					<div className="flex-shrink-0">
-						<AlertTriangle className="h-4 w-4 text-red-600" />
+						<IconComponent className={cn('h-4 w-4', styling.iconColor)} />
 					</div>
 					
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2 mb-1">
-							<span className="text-sm">{getDisasterEmoji(currentAlert.report.type)}</span>
-							<h3 className="text-xs font-semibold text-red-800">
-								{getDisasterDisplayName(currentAlert.report.type)} Alert
+							{currentAlert.type === 'new_report' && (
+								<span className="text-sm">{getDisasterEmoji(currentAlert.report.type)}</span>
+							)}
+							<h3 className={cn('text-xs font-semibold', styling.titleColor)}>
+								{styling.title}
 							</h3>
 						</div>
 						
-						<p className="text-xs text-red-700 mb-1 line-clamp-2">
-							{currentAlert.report.description}
-						</p>
-						
-						<div className="flex items-center gap-2 text-xs text-red-600">
-							<div className="flex items-center gap-1">
-								<MapPin className="h-3 w-3" />
-								<span>{formatDistance(currentAlert.distance)} away</span>
-							</div>
-						</div>
+						{currentAlert.type === 'new_report' ? (
+							<>
+								<p className={cn('text-xs mb-1 line-clamp-2', styling.textColor)}>
+									{currentAlert.report.description}
+								</p>
+								
+								<div className="flex items-center gap-2 text-xs">
+									<div className={cn('flex items-center gap-1', styling.textColor)}>
+										<MapPin className="h-3 w-3" />
+										<span>{formatDistance(currentAlert.distance)} away</span>
+									</div>
+								</div>
+							</>
+						) : (
+							<>
+								<p className={cn('text-xs mb-1 line-clamp-2', styling.textColor)}>
+									{getDisasterDisplayName(currentAlert.report.type)} report status changed
+									{currentAlert.previousStatus && (
+										<span> from {currentAlert.previousStatus} to {currentAlert.report.status}</span>
+									)}
+								</p>
+								
+								<div className="flex items-center gap-2 text-xs">
+									<div className={cn('flex items-center gap-1', styling.textColor)}>
+										<MapPin className="h-3 w-3" />
+										<span>{formatDistance(currentAlert.distance)} away</span>
+									</div>
+								</div>
+							</>
+						)}
 					</div>
 					
 					<button
 						onClick={() => dismissAlert(currentAlert.id)}
-						className="flex-shrink-0 text-red-400 hover:text-red-600 transition-colors"
+						className={cn('flex-shrink-0 transition-colors', styling.textColor, 'hover:opacity-70')}
 						aria-label="Dismiss alert"
 					>
 						<X className="h-3 w-3" />

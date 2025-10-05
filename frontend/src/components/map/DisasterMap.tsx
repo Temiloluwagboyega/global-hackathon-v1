@@ -176,14 +176,6 @@ export const DisasterMap = ({
 	}, [selectedReport, center])
 
 
-	const getStatusColor = (status: DisasterReport['status']) => {
-		const colors = {
-			active: 'text-red-600',
-			resolved: 'text-green-600',
-			investigating: 'text-yellow-600',
-		}
-		return colors[status]
-	}
 
 	return (
 		<div className={cn('w-full h-full', className)}>

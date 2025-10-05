@@ -61,12 +61,12 @@ export const Navbar = ({ className }: NavbarProps) => {
 						) : isBackendConnected ? (
 							<div className="flex items-center gap-1 text-green-600">
 								<div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-								<span className="hidden sm:inline">Backend Connected</span>
+								<span className="hidden sm:inline"> Connected</span>
 							</div>
 						) : (
 							<div className="flex items-center gap-1 text-red-600">
 								<div className="h-2 w-2 bg-red-500 rounded-full"></div>
-								<span className="hidden sm:inline">Backend Offline</span>
+								<span className="hidden sm:inline"> Offline</span>
 							</div>
 						)}
 					</div>
