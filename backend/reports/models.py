@@ -91,7 +91,10 @@ class DisasterReport(Document):
 	@property
 	def timestamp(self):
 		"""Return created_at as ISO string for API responses."""
-		return self.created_at.isoformat()
+		timestamp_str = self.created_at.isoformat()
+		print(f"Model timestamp property - created_at: {self.created_at}")
+		print(f"Model timestamp property - isoformat: {timestamp_str}")
+		return timestamp_str
 	
 	@property
 	def image_url(self):

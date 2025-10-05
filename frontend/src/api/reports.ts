@@ -33,12 +33,26 @@ export const reportsApi = {
 			formData.append('longitude', reportData.location.lng.toString())
 			formData.append('status', 'active')
 			
-			// Add current browser timestamp (use ISO string for proper timezone handling)
+			// Add current browser timestamp with local timezone (no conversion)
 			const now = new Date()
-			const timestamp = now.toISOString()
+			const timezoneOffset = now.getTimezoneOffset()
+			const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60)
+			const offsetMinutes = Math.abs(timezoneOffset) % 60
+			const offsetSign = timezoneOffset <= 0 ? '+' : '-'
+			const offsetString = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`
 			
-			console.log('Sending timestamp:', timestamp)
-			formData.append('timestamp', timestamp)
+			// Create timestamp in local timezone format (YYYY-MM-DDTHH:mm:ss.sss+HH:MM)
+			const localTimestamp = now.getFullYear() + '-' + 
+				String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+				String(now.getDate()).padStart(2, '0') + 'T' + 
+				String(now.getHours()).padStart(2, '0') + ':' + 
+				String(now.getMinutes()).padStart(2, '0') + ':' + 
+				String(now.getSeconds()).padStart(2, '0') + '.' + 
+				String(now.getMilliseconds()).padStart(3, '0') + '000' + offsetString
+			
+			console.log('Sending timestamp (local timezone):', localTimestamp)
+			console.log('Current local time:', now.toString())
+			formData.append('timestamp', localTimestamp)
 			
 			// Add image if provided
 			if (reportData.imageFile) {
