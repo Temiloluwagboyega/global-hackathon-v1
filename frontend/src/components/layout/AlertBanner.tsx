@@ -88,7 +88,7 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 	return (
 		<div className={cn('fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[9998] max-w-sm w-full px-4', className)}>
 			<div
-				className="bg-red-50 border border-red-200 rounded-lg p-3 shadow-lg animate-in slide-in-from-bottom-2 duration-500"
+				className="bg-red-50 text-nowrap border border-red-200 rounded-lg p-3 shadow-lg animate-in slide-in-from-bottom-2 duration-500"
 				role="alert"
 			>
 				<div className="flex items-center gap-2">

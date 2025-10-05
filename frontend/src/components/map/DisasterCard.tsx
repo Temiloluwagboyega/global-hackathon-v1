@@ -1,9 +1,11 @@
 import { MapPin, Clock, Eye, ChevronDown } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { cn } from '../../utils/cn'
-import { getDisasterEmoji, getDisasterDisplayName, getStatusColor, formatTimestamp, formatDistance } from '../../utils'
+import { getDisasterEmoji, getDisasterDisplayName, getStatusColor, formatDistance } from '../../utils'
 import { useReporterId, useUpdateReportStatus } from '../../hooks/api/useReports'
+import { useRealTimeTimestamp } from '../../hooks/utils/useRealTimeTimestamp'
 import type { DisasterReport } from '../../types'
+import toast from 'react-hot-toast'
 
 interface DisasterCardProps {
 	report: DisasterReport
@@ -20,6 +22,9 @@ export const DisasterCard = ({ report, userLocation, onClick, className }: Disas
 	
 	const currentReporterId = reporterData?.reporter_id
 	const isOwner = currentReporterId && report.reporterId === currentReporterId
+	
+	// Real-time timestamp that updates every minute
+	const formattedTimestamp = useRealTimeTimestamp(report.timestamp)
 
 	// Close dropdown when clicking outside
 	useEffect(() => {
@@ -55,8 +60,55 @@ export const DisasterCard = ({ report, userLocation, onClick, className }: Disas
 				reporterId: currentReporterId
 			})
 			setShowStatusDropdown(false)
+			
+			// Show success toast with appropriate color and message
+			const statusMessages = {
+				active: 'Report marked as active',
+				resolved: 'Report resolved successfully! 🎉',
+				investigating: 'Report marked as under investigation'
+			}
+			
+			const statusIcons = {
+				active: '📋',
+				resolved: '✅',
+				investigating: '🔍'
+			}
+			
+			// Show different colored toasts based on status
+			if (newStatus === 'resolved') {
+				toast.success(statusMessages[newStatus], {
+					duration: 4000,
+					style: {
+						background: '#dcfce7',
+						color: '#166534',
+						border: '1px solid #bbf7d0'
+					},
+					icon: statusIcons[newStatus]
+				})
+			} else if (newStatus === 'investigating') {
+				toast(statusMessages[newStatus], {
+					duration: 4000,
+					style: {
+						background: '#dbeafe',
+						color: '#1e40af',
+						border: '1px solid #bfdbfe'
+					},
+					icon: statusIcons[newStatus]
+				})
+			} else {
+				toast(statusMessages[newStatus], {
+					duration: 4000,
+					style: {
+						background: '#fef3c7',
+						color: '#92400e',
+						border: '1px solid #fde68a'
+					},
+					icon: statusIcons[newStatus]
+				})
+			}
 		} catch (error) {
 			console.error('Failed to update status:', error)
+			toast.error('Failed to update status. Please try again.')
 		}
 	}
 
@@ -152,7 +204,7 @@ export const DisasterCard = ({ report, userLocation, onClick, className }: Disas
 			<div className="flex items-center justify-between text-xs text-gray-500">
 				<div className="flex items-center gap-1">
 					<Clock className="h-3 w-3" />
-					<span>{formatTimestamp(report.timestamp)}</span>
+					<span>{formattedTimestamp}</span>
 				</div>
 				
 				{userLocation && distance !== null && (

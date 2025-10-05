@@ -62,20 +62,15 @@ export const formatTimestamp = (timestamp: string): string => {
 	
 	let normalizedTimestamp = timestamp
 	
-	// Remove timezone if present and handle microseconds
-	if (timestamp.includes('+') || timestamp.endsWith('Z')) {
-		// Remove timezone part
-		normalizedTimestamp = timestamp.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '')
-	}
-	
 	// Handle microseconds (more than 3 digits after decimal point)
 	if (normalizedTimestamp.includes('.') && normalizedTimestamp.split('.')[1].length > 3) {
 		const parts = normalizedTimestamp.split('.')
 		const seconds = parts[0]
 		const microseconds = parts[1].substring(0, 3) // Keep only first 3 digits (milliseconds)
-		normalizedTimestamp = `${seconds}.${microseconds}`
+		normalizedTimestamp = `${seconds}.${microseconds}${parts[1].substring(3)}` // Keep timezone part
 	}
 	
+	// Create Date object directly from the timestamp (preserves timezone)
 	const date = new Date(normalizedTimestamp)
 	const now = new Date()
 	

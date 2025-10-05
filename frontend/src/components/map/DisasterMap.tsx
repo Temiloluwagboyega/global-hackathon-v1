@@ -3,8 +3,57 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import { Icon } from 'leaflet'
 import L from 'leaflet'
 import type { DisasterReport, Coordinates } from '../../types'
-import { getDisasterEmoji, getDisasterDisplayName, formatTimestamp, formatDistance } from '../../utils'
+import { getDisasterEmoji, getDisasterDisplayName, getStatusColor, formatDistance } from '../../utils'
+import { useRealTimeTimestamp } from '../../hooks/utils/useRealTimeTimestamp'
 import { cn } from '../../utils/cn'
+
+// Component for popup content with real-time timestamp
+const DisasterPopup = ({ report, userLocation }: { report: DisasterReport; userLocation?: { lat: number; lng: number } | null }) => {
+	const formattedTimestamp = useRealTimeTimestamp(report.timestamp)
+	
+	return (
+		<div className="space-y-2">
+			<div className="flex items-center gap-2">
+				<span className="text-lg">{getDisasterEmoji(report.type)}</span>
+				<div>
+					<h3 className="font-semibold text-gray-900">
+						{getDisasterDisplayName(report.type)}
+					</h3>
+					<span className={cn('text-xs px-2 py-1 rounded-full', getStatusColor(report.status))}>
+						{report.status}
+					</span>
+				</div>
+			</div>
+			
+			<p className="text-sm text-gray-700">{report.description}</p>
+			
+			<div className="text-xs text-gray-500 space-y-1">
+				<div>📍 {report.location.lat.toFixed(4)}, {report.location.lng.toFixed(4)}</div>
+				<div>🕒 {formattedTimestamp}</div>
+				{userLocation && (
+					<div>
+						📏 {formatDistance(
+							Math.sqrt(
+								Math.pow(report.location.lat - userLocation.lat, 2) +
+								Math.pow(report.location.lng - userLocation.lng, 2)
+							) * 111 // Rough conversion to km
+						)} away
+					</div>
+				)}
+			</div>
+			
+			{report.imageUrl && (
+				<div className="mt-2">
+					<img 
+						src={report.imageUrl} 
+						alt="Disaster report" 
+						className="w-full h-24 object-cover rounded"
+					/>
+				</div>
+			)}
+		</div>
+	)
+}
 
 // Fix for default markers in React Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -191,46 +240,7 @@ export const DisasterMap = ({
 						icon={createDisasterIcon(report.type)}
 					>
 						<Popup className="min-w-[250px]">
-							<div className="space-y-2">
-								<div className="flex items-center gap-2">
-									<span className="text-lg">{getDisasterEmoji(report.type)}</span>
-									<div>
-										<h3 className="font-semibold text-gray-900">
-											{getDisasterDisplayName(report.type)}
-										</h3>
-										<span className={cn('text-xs px-2 py-1 rounded-full', getStatusColor(report.status))}>
-											{report.status}
-										</span>
-									</div>
-								</div>
-								
-								<p className="text-sm text-gray-700">{report.description}</p>
-								
-								<div className="text-xs text-gray-500 space-y-1">
-									<div>📍 {report.location.lat.toFixed(4)}, {report.location.lng.toFixed(4)}</div>
-									<div>🕒 {formatTimestamp(report.timestamp)}</div>
-									{userLocation && (
-										<div>
-											📏 {formatDistance(
-												Math.sqrt(
-													Math.pow(report.location.lat - userLocation.lat, 2) +
-													Math.pow(report.location.lng - userLocation.lng, 2)
-												) * 111 // Rough conversion to km
-											)} away
-										</div>
-									)}
-								</div>
-								
-								{report.imageUrl && (
-									<div className="mt-2">
-										<img 
-											src={report.imageUrl} 
-											alt="Disaster report" 
-											className="w-full h-24 object-cover rounded"
-										/>
-									</div>
-								)}
-							</div>
+							<DisasterPopup report={report} userLocation={userLocation} />
 						</Popup>
 					</Marker>
 				))}

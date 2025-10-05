@@ -19,6 +19,124 @@ from .serializers import (
 	CreateReportResponseSerializer,
 )
 from .utils import get_anonymous_reporter_id, validate_reporter_id
+import requests
+import json
+
+
+def generate_ai_summary(summary_counts, reports_data):
+	"""
+	Generate AI-powered summary using Hugging Face Inference API.
+	"""
+	try:
+		# Prepare the prompt for AI analysis
+		disaster_types = []
+		for disaster_type, count in summary_counts.items():
+			if count > 0:
+				disaster_types.append(f"{count} {disaster_type}")
+		
+		# Create a detailed prompt for the AI
+		prompt = f"""
+		Analyze the following disaster reports from the last 24 hours and provide a comprehensive summary with safety recommendations:
+		
+		Report Summary: {', '.join(disaster_types) if disaster_types else 'No reports'}
+		
+		Recent Reports:
+		{json.dumps(reports_data[:5], indent=2)}  # Limit to first 5 reports for context
+		
+		Please provide:
+		1. A brief overview of the current situation
+		2. Key safety recommendations for residents
+		3. Emergency response status
+		4. Any patterns or concerns to watch for
+		
+		Keep the response concise, professional, and actionable. Focus on public safety.
+		"""
+		
+		# Use Hugging Face Inference API (free tier)
+		api_url = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
+		headers = {"Authorization": "Bearer hf_demo"}  # Free tier, no auth needed for basic usage
+		
+		payload = {
+			"inputs": prompt,
+			"parameters": {
+				"max_length": 200,
+				"temperature": 0.7,
+				"do_sample": True
+			}
+		}
+		
+		response = requests.post(api_url, headers=headers, json=payload, timeout=10)
+		
+		if response.status_code == 200:
+			result = response.json()
+			if isinstance(result, list) and len(result) > 0:
+				ai_text = result[0].get('generated_text', '')
+				# Clean up the response
+				if ai_text:
+					# Remove the original prompt from the response
+					ai_text = ai_text.replace(prompt, '').strip()
+					return ai_text[:300] + "..." if len(ai_text) > 300 else ai_text
+		
+		# Fallback to rule-based summary if AI fails
+		return generate_fallback_summary(summary_counts, reports_data)
+		
+	except Exception as e:
+		print(f"AI Summary Generation Error: {e}")
+		return generate_fallback_summary(summary_counts, reports_data)
+
+
+def generate_fallback_summary(summary_counts, reports_data):
+	"""
+	Generate a rule-based summary as fallback when AI is unavailable.
+	"""
+	total_reports = sum(summary_counts.values())
+	
+	if total_reports == 0:
+		return "No disaster reports in the last 24 hours. The area appears to be safe with no emergency incidents reported."
+	
+	# Analyze patterns
+	active_reports = len([r for r in reports_data if r['status'] == 'active'])
+	resolved_reports = len([r for r in reports_data if r['status'] == 'resolved'])
+	investigating_reports = len([r for r in reports_data if r['status'] == 'investigating'])
+	
+	# Determine primary disaster type
+	primary_type = max(summary_counts.items(), key=lambda x: x[1])
+	
+	summary_parts = []
+	
+	# Overview
+	if total_reports == 1:
+		summary_parts.append(f"1 {primary_type[0]} incident reported in the last 24 hours.")
+	else:
+		summary_parts.append(f"{total_reports} disaster incidents reported in the last 24 hours, with {primary_type[1]} {primary_type[0]} being the most common.")
+	
+	# Status analysis
+	if active_reports > 0:
+		summary_parts.append(f"{active_reports} incidents remain active and require attention.")
+	
+	if investigating_reports > 0:
+		summary_parts.append(f"{investigating_reports} incidents are under investigation.")
+	
+	if resolved_reports > 0:
+		summary_parts.append(f"{resolved_reports} incidents have been successfully resolved.")
+	
+	# Safety recommendations based on disaster types
+	recommendations = []
+	if summary_counts['fires'] > 0:
+		recommendations.append("Avoid areas with reported fires and follow evacuation orders if issued.")
+	if summary_counts['floods'] > 0:
+		recommendations.append("Stay away from flooded areas and avoid driving through standing water.")
+	if summary_counts['accidents'] > 0:
+		recommendations.append("Exercise caution when traveling and expect potential traffic delays.")
+	if summary_counts['collapses'] > 0:
+		recommendations.append("Avoid buildings or structures that may be unstable.")
+	
+	if recommendations:
+		summary_parts.append("Safety recommendations: " + " ".join(recommendations))
+	
+	summary_parts.append("Emergency services are actively monitoring and responding to all incidents.")
+	
+	return " ".join(summary_parts)
 
 
 def haversine_distance(lat1, lon1, lat2, lon2):
@@ -279,17 +397,24 @@ def ai_summary_view(request):
 			'collapses': recent_reports(disaster_type='collapse').count(),
 		}
 		
-		# Generate summary text
 		total_reports = sum(summary_counts.values())
+		
+		# Generate AI-powered summary
 		if total_reports == 0:
-			summary_text = "No disaster reports in the last 24 hours."
+			summary_text = "No disaster reports in the last 24 hours. The area appears to be safe with no emergency incidents reported."
 		else:
-			summary_parts = []
-			for disaster_type, count in summary_counts.items():
-				if count > 0:
-					summary_parts.append(f"{count} {disaster_type}")
+			# Prepare data for AI analysis
+			reports_data = []
+			for report in recent_reports:
+				reports_data.append({
+					'type': report.disaster_type,
+					'description': report.description,
+					'status': report.status,
+					'location': f"{report.latitude:.4f}, {report.longitude:.4f}"
+				})
 			
-			summary_text = f"In the last 24 hours: {', '.join(summary_parts)} reported. Emergency services are actively responding to all incidents."
+			# Generate AI summary using Hugging Face
+			summary_text = generate_ai_summary(summary_counts, reports_data)
 		
 		# Create response data
 		response_data = {
@@ -302,10 +427,43 @@ def ai_summary_view(request):
 		return Response(response_data, status=status.HTTP_200_OK)
 		
 	except Exception as e:
-		return Response(
-			{'error': 'Failed to generate AI summary'},
-			status=status.HTTP_500_INTERNAL_SERVER_ERROR
-		)
+		print(f"AI Summary Error: {e}")
+		# Fallback to basic summary if AI fails
+		try:
+			last_24_hours = timezone.now() - timedelta(hours=24)
+			recent_reports = DisasterReport.objects(created_at__gte=last_24_hours)
+			
+			summary_counts = {
+				'floods': recent_reports(disaster_type='flood').count(),
+				'fires': recent_reports(disaster_type='fire').count(),
+				'accidents': recent_reports(disaster_type='accident').count(),
+				'collapses': recent_reports(disaster_type='collapse').count(),
+			}
+			
+			total_reports = sum(summary_counts.values())
+			if total_reports == 0:
+				summary_text = "No disaster reports in the last 24 hours."
+			else:
+				summary_parts = []
+				for disaster_type, count in summary_counts.items():
+					if count > 0:
+						summary_parts.append(f"{count} {disaster_type}")
+				
+				summary_text = f"In the last 24 hours: {', '.join(summary_parts)} reported. Emergency services are actively responding to all incidents."
+			
+			response_data = {
+				'summary': summary_text,
+				'last24Hours': summary_counts,
+				'location': 'Global',
+				'generatedAt': timezone.now().isoformat(),
+			}
+			
+			return Response(response_data, status=status.HTTP_200_OK)
+		except Exception as fallback_error:
+			return Response(
+				{'error': 'Failed to generate AI summary'},
+				status=status.HTTP_500_INTERNAL_SERVER_ERROR
+			)
 
 
 @api_view(['GET'])
