@@ -91,7 +91,14 @@ class DisasterReport(Document):
 	@property
 	def timestamp(self):
 		"""Return created_at as ISO string for API responses."""
-		timestamp_str = self.created_at.isoformat()
+		# Ensure timezone info is included in the ISO string
+		if self.created_at.tzinfo is None:
+			# If no timezone info, assume UTC
+			from django.utils import timezone
+			timestamp_str = timezone.make_aware(self.created_at, timezone.utc).isoformat()
+		else:
+			timestamp_str = self.created_at.isoformat()
+		
 		print(f"Model timestamp property - created_at: {self.created_at}")
 		print(f"Model timestamp property - isoformat: {timestamp_str}")
 		return timestamp_str

@@ -85,6 +85,11 @@ export const formatTimestamp = (timestamp: string): string => {
 		}
 	}
 	
+	// IMPORTANT: If timestamp has no timezone info, assume it's UTC and add 'Z'
+	if (!normalizedTimestamp.includes('Z') && !normalizedTimestamp.includes('+') && !normalizedTimestamp.includes('-', 10)) {
+		normalizedTimestamp += 'Z'
+	}
+	
 	// Create Date object from the timestamp (handles UTC conversion automatically)
 	const date = new Date(normalizedTimestamp)
 	const now = new Date()
@@ -132,7 +137,13 @@ export const formatTimestamp = (timestamp: string): string => {
  * Format timestamp for detailed display (converts UTC to user's local timezone)
  */
 export const formatDetailedTimestamp = (timestamp: string): string => {
-	const date = new Date(timestamp)
+	// Ensure timestamp is treated as UTC if no timezone info
+	let normalizedTimestamp = timestamp
+	if (!normalizedTimestamp.includes('Z') && !normalizedTimestamp.includes('+') && !normalizedTimestamp.includes('-', 10)) {
+		normalizedTimestamp += 'Z'
+	}
+	
+	const date = new Date(normalizedTimestamp)
 	return date.toLocaleString('en-US', {
 		weekday: 'short',
 		year: 'numeric',
