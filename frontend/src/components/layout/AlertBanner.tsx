@@ -144,51 +144,46 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 	// Only show the most recent alert
 	const currentAlert = activeAlerts[activeAlerts.length - 1]
 
-	// Determine alert styling based on type
+	// Determine alert styling based on status
 	const getAlertStyling = (alert: AlertState) => {
-		if (alert.type === 'status_update') {
-			switch (alert.report.status) {
-				case 'resolved':
-					return {
-						bgColor: 'bg-green-50',
-						borderColor: 'border-green-200',
-						iconColor: 'text-green-600',
-						titleColor: 'text-green-800',
-						textColor: 'text-green-700',
-						icon: CheckCircle,
-						title: 'Report Resolved'
-					}
-				case 'investigating':
-					return {
-						bgColor: 'bg-yellow-50',
-						borderColor: 'border-yellow-200',
-						iconColor: 'text-yellow-600',
-						titleColor: 'text-yellow-800',
-						textColor: 'text-yellow-700',
-						icon: Clock,
-						title: 'Under Investigation'
-					}
-				default:
-					return {
-						bgColor: 'bg-blue-50',
-						borderColor: 'border-blue-200',
-						iconColor: 'text-blue-600',
-						titleColor: 'text-blue-800',
-						textColor: 'text-blue-700',
-						icon: AlertTriangle,
-						title: 'Status Updated'
-					}
-			}
-		} else {
-			return {
-				bgColor: 'bg-red-50',
-				borderColor: 'border-red-200',
-				iconColor: 'text-red-600',
-				titleColor: 'text-red-800',
-				textColor: 'text-red-700',
-				icon: AlertTriangle,
-				title: `${getDisasterDisplayName(alert.report.type)} Alert`
-			}
+		// For new reports, use red (active status)
+		// For status updates, use the report's current status color
+		const status = alert.type === 'new_report' ? 'active' : alert.report.status
+		
+		switch (status) {
+			case 'resolved':
+				return {
+					bgColor: 'bg-green-50',
+					borderColor: 'border-green-200',
+					iconColor: 'text-green-600',
+					titleColor: 'text-green-800',
+					textColor: 'text-green-700',
+					icon: CheckCircle,
+					title: 'Report Resolved'
+				}
+			case 'investigating':
+				return {
+					bgColor: 'bg-yellow-50',
+					borderColor: 'border-yellow-200',
+					iconColor: 'text-yellow-600',
+					titleColor: 'text-yellow-800',
+					textColor: 'text-yellow-700',
+					icon: Clock,
+					title: 'Under Investigation'
+				}
+			case 'active':
+			default:
+				return {
+					bgColor: 'bg-red-50',
+					borderColor: 'border-red-200',
+					iconColor: 'text-red-600',
+					titleColor: 'text-red-800',
+					textColor: 'text-red-700',
+					icon: AlertTriangle,
+					title: alert.type === 'new_report' 
+						? `${getDisasterDisplayName(alert.report.type)} Alert`
+						: 'Report Active'
+				}
 		}
 	}
 
@@ -212,44 +207,29 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 					
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2 mb-1">
-							{currentAlert.type === 'new_report' && (
-								<span className="text-sm">{getDisasterEmoji(currentAlert.report.type)}</span>
-							)}
+							<span className="text-sm">{getDisasterEmoji(currentAlert.report.type)}</span>
 							<h3 className={cn('text-xs font-semibold', styling.titleColor)}>
 								{styling.title}
 							</h3>
 						</div>
 						
-						{currentAlert.type === 'new_report' ? (
-							<>
-								<p className={cn('text-xs mb-1 line-clamp-2', styling.textColor)}>
-									{currentAlert.report.description}
-								</p>
-								
-								<div className="flex items-center gap-2 text-xs">
-									<div className={cn('flex items-center gap-1', styling.textColor)}>
-										<MapPin className="h-3 w-3" />
-										<span>{formatDistance(currentAlert.distance)} away</span>
-									</div>
-								</div>
-							</>
-						) : (
-							<>
-								<p className={cn('text-xs mb-1 line-clamp-2', styling.textColor)}>
-									{getDisasterDisplayName(currentAlert.report.type)} report status changed
-									{currentAlert.previousStatus && (
-										<span> from {currentAlert.previousStatus} to {currentAlert.report.status}</span>
-									)}
-								</p>
-								
-								<div className="flex items-center gap-2 text-xs">
-									<div className={cn('flex items-center gap-1', styling.textColor)}>
-										<MapPin className="h-3 w-3" />
-										<span>{formatDistance(currentAlert.distance)} away</span>
-									</div>
-								</div>
-							</>
-						)}
+						<p className={cn('text-xs mb-1 line-clamp-2', styling.textColor)}>
+							{currentAlert.type === 'new_report' 
+								? currentAlert.report.description
+								: `${getDisasterDisplayName(currentAlert.report.type)} report status changed${
+									currentAlert.previousStatus 
+										? ` from ${currentAlert.previousStatus} to ${currentAlert.report.status}`
+										: ` to ${currentAlert.report.status}`
+								}`
+							}
+						</p>
+						
+						<div className="flex items-center gap-2 text-xs">
+							<div className={cn('flex items-center gap-1', styling.textColor)}>
+								<MapPin className="h-3 w-3" />
+								<span>{formatDistance(currentAlert.distance)} away</span>
+							</div>
+						</div>
 					</div>
 					
 					<button

@@ -20,4 +20,7 @@ urlpatterns = [
 	
 	# Health check
 	path('health/', views.health_check_view, name='health-check'),
+	
+	# Cleanup endpoint
+	path('cleanup/resolved/', views.cleanup_resolved_reports_view, name='cleanup-resolved-reports'),
 ]

@@ -2,6 +2,7 @@ import math
 from datetime import datetime, timedelta
 from django.http import JsonResponse
 from django.utils import timezone
+from django.core.management import call_command
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -600,3 +601,55 @@ def reports_summary_view(request):
 			{'error': 'Failed to generate summary'},
 			status=status.HTTP_500_INTERNAL_SERVER_ERROR
 		)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def cleanup_resolved_reports_view(request):
+	"""
+	API endpoint to manually trigger cleanup of resolved reports.
+	Deletes resolved reports that have been resolved for more than 10 minutes.
+	"""
+	try:
+		# Calculate the cutoff time (10 minutes ago)
+		cutoff_time = timezone.now() - timedelta(minutes=10)
+		
+		# Find resolved reports that were updated more than 10 minutes ago
+		resolved_reports = DisasterReport.objects.filter(
+			status='resolved',
+			updated_at__lt=cutoff_time
+		)
+		
+		count = resolved_reports.count()
+		
+		if count == 0:
+			return Response({
+				'success': True,
+				'message': 'No resolved reports found to delete.',
+				'deleted_count': 0
+			}, status=status.HTTP_200_OK)
+		
+		# Log the reports being deleted
+		deleted_reports = []
+		for report in resolved_reports:
+			deleted_reports.append({
+				'id': str(report.id),
+				'type': report.disaster_type,
+				'resolved_at': report.updated_at.isoformat()
+			})
+		
+		# Delete the reports
+		deleted_count = resolved_reports.delete()
+		
+		return Response({
+			'success': True,
+			'message': f'Successfully deleted {deleted_count} resolved reports.',
+			'deleted_count': deleted_count,
+			'deleted_reports': deleted_reports
+		}, status=status.HTTP_200_OK)
+		
+	except Exception as e:
+		return Response({
+			'success': False,
+			'error': f'Failed to cleanup resolved reports: {str(e)}'
+		}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
