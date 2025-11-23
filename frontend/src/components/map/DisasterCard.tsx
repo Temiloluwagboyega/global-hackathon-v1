@@ -1,4 +1,4 @@
-import { MapPin, Clock, Eye, ChevronDown } from 'lucide-react'
+import { MapPin, Clock, Eye, ChevronDown, Navigation } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { cn } from '../../utils/cn'
 import { getDisasterEmoji, getDisasterDisplayName, getStatusColor, formatDistance } from '../../utils'
@@ -84,6 +84,21 @@ export const DisasterCard = ({ report, userLocation, onClick, className }: Disas
 				message: 'Failed to update status. Please try again.'
 			})
 		}
+	}
+
+	const handleGetDirections = (e: React.MouseEvent) => {
+		e.stopPropagation() // Prevent card click
+		
+		if (!userLocation) return
+		
+		// Create Google Maps directions URL
+		// Format: https://www.google.com/maps/dir/?api=1&origin=LAT,LNG&destination=LAT,LNG
+		const origin = `${userLocation.lat},${userLocation.lng}`
+		const destination = `${report.location.lat},${report.location.lng}`
+		const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`
+		
+		// Open in new tab/window
+		window.open(googleMapsUrl, '_blank', 'noopener,noreferrer')
 	}
 
 	const statusOptions = [
@@ -181,12 +196,25 @@ export const DisasterCard = ({ report, userLocation, onClick, className }: Disas
 					<span>{formattedTimestamp}</span>
 				</div>
 				
-				{userLocation && distance !== null && (
-					<div className="flex items-center gap-1">
-						<MapPin className="h-3 w-3" />
-						<span>{formatDistance(distance)}</span>
-					</div>
-				)}
+				<div className="flex items-center gap-3">
+					{userLocation && distance !== null && (
+						<div className="flex items-center gap-1">
+							<MapPin className="h-3 w-3" />
+							<span>{formatDistance(distance)}</span>
+						</div>
+					)}
+					
+					{userLocation && (
+						<button
+							onClick={handleGetDirections}
+							className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+							title="Get directions in Google Maps"
+						>
+							<Navigation className="h-3 w-3" />
+							<span className="text-xs font-medium">Directions</span>
+						</button>
+					)}
+				</div>
 			</div>
 		</div>
 	)

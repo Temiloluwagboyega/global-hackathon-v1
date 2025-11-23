@@ -11,57 +11,86 @@
 		@apply bg-gray-50 text-gray-900;
 	}
 	
-	/* Leaflet map fixes */
-	.leaflet-container {
+	/* OpenLayers map fixes - optimized for performance */
+	.ol-viewport {
 		height: 100%;
 		width: 100%;
-		z-index: 1;
-		min-height: 400px;
 		position: relative;
+		/* Hardware acceleration for faster rendering */
+		transform: translateZ(0);
+		will-change: transform;
 	}
 	
-	/* Ensure map container takes full height */
-	.leaflet-container.leaflet-touch {
-		height: 100% !important;
-	}
-	
-	.leaflet-popup-content-wrapper {
-		border-radius: 8px;
-	}
-	
-	.leaflet-popup-content {
-		margin: 8px 12px;
-		line-height: 1.4;
-	}
-	
-	/* Fix for map tiles not loading */
-	.leaflet-tile {
+	.ol-map {
+		height: 100%;
+		width: 100%;
+		min-height: 400px;
+		/* Optimize rendering performance */
 		image-rendering: -webkit-optimize-contrast;
 		image-rendering: crisp-edges;
 	}
 	
-	/* Ensure proper map rendering */
-	.leaflet-map-pane {
-		z-index: 2;
+	/* Optimize tile rendering for speed */
+	.ol-layer {
+		will-change: transform;
+	}
+	
+	.ol-tile {
+		image-rendering: -webkit-optimize-contrast;
+		image-rendering: crisp-edges;
+	}
+	
+	/* OpenLayers popup styling */
+	.ol-popup {
+		position: absolute;
+		background-color: white;
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+		padding: 12px;
+		border-radius: 8px;
+		border: 1px solid #ccc;
+		bottom: 12px;
+		left: -50px;
+		min-width: 250px;
+		max-width: 300px;
+		pointer-events: auto;
+	}
+	
+	.ol-popup:after {
+		content: '';
+		position: absolute;
+		top: 100%;
+		left: 50%;
+		width: 0;
+		height: 0;
+		border-left: 10px solid transparent;
+		border-right: 10px solid transparent;
+		border-top: 10px solid white;
+		margin-left: -10px;
+	}
+	
+	.ol-popup-closer {
+		text-decoration: none;
+		position: absolute;
+		top: 2px;
+		right: 8px;
+		font-size: 18px;
+		color: #666;
+		cursor: pointer;
+	}
+	
+	.ol-popup-closer:hover {
+		color: #000;
 	}
 	
 	/* Ensure map doesn't interfere with modals */
-	.leaflet-control-container {
+	.ol-control {
 		z-index: 3;
-	}
-	
-	/* Fix for map popups */
-	.leaflet-popup-pane {
-		z-index: 4;
 	}
 	
 	/* Mobile responsive fixes */
 	@media (max-width: 768px) {
-		.leaflet-control-zoom {
-			display: none;
-		}
-		
-		.leaflet-popup-content-wrapper {
+		.ol-popup {
+			min-width: 200px;
 			max-width: 280px;
 		}
 	}

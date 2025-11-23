@@ -1,67 +1,18 @@
-import { useEffect, useState, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet'
-import { Icon } from 'leaflet'
-import L from 'leaflet'
+import { useEffect, useRef } from 'react'
+import { Map, View } from 'ol'
+import TileLayer from 'ol/layer/Tile'
+import XYZ from 'ol/source/XYZ'
+import VectorLayer from 'ol/layer/Vector'
+import VectorSource from 'ol/source/Vector'
+import { Feature } from 'ol'
+import { Point } from 'ol/geom'
+import { fromLonLat, toLonLat } from 'ol/proj'
+import { Style, Icon } from 'ol/style'
+import Overlay from 'ol/Overlay'
+import 'ol/ol.css'
 import type { DisasterReport, Coordinates } from '../../types'
-import { getDisasterEmoji, getDisasterDisplayName, getStatusColor, formatDistance } from '../../utils'
-import { useRealTimeTimestamp } from '../../hooks/utils/useRealTimeTimestamp'
+import { getDisasterEmoji, getDisasterDisplayName, getStatusColor } from '../../utils'
 import { cn } from '../../utils/cn'
-
-// Component for popup content with real-time timestamp
-const DisasterPopup = ({ report, userLocation }: { report: DisasterReport; userLocation?: { lat: number; lng: number } | null }) => {
-	const formattedTimestamp = useRealTimeTimestamp(report.timestamp)
-	
-	return (
-		<div className="space-y-2">
-			<div className="flex items-center gap-2">
-				<span className="text-lg">{getDisasterEmoji(report.type)}</span>
-				<div>
-					<h3 className="font-semibold text-gray-900">
-						{getDisasterDisplayName(report.type)}
-					</h3>
-					<span className={cn('text-xs px-2 py-1 rounded-full', getStatusColor(report.status))}>
-						{report.status}
-					</span>
-				</div>
-			</div>
-			
-			<p className="text-sm text-gray-700">{report.description}</p>
-			
-			<div className="text-xs text-gray-500 space-y-1">
-				<div>📍 {report.location.lat.toFixed(4)}, {report.location.lng.toFixed(4)}</div>
-				<div>🕒 {formattedTimestamp}</div>
-				{userLocation && (
-					<div>
-						📏 {formatDistance(
-							Math.sqrt(
-								Math.pow(report.location.lat - userLocation.lat, 2) +
-								Math.pow(report.location.lng - userLocation.lng, 2)
-							) * 111 // Rough conversion to km
-						)} away
-					</div>
-				)}
-			</div>
-			
-			{report.imageUrl && (
-				<div className="mt-2">
-					<img 
-						src={report.imageUrl} 
-						alt="Disaster report" 
-						className="w-full h-24 object-cover rounded"
-					/>
-				</div>
-			)}
-		</div>
-	)
-}
-
-// Fix for default markers in React Leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-	iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-	iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-	shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-})
 
 interface DisasterMapProps {
 	reports: DisasterReport[]
@@ -73,11 +24,9 @@ interface DisasterMapProps {
 	className?: string
 }
 
-// Custom marker icons for different disaster types
-const createDisasterIcon = (type: DisasterReport['type']) => {
+// Create custom icon style for disaster markers
+const createDisasterIconStyle = (type: DisasterReport['type']) => {
 	const emoji = getDisasterEmoji(type)
-	
-	// Use encodeURIComponent to handle emoji characters
 	const svgString = `
 		<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
 			<circle cx="16" cy="16" r="14" fill="white" stroke="#374151" stroke-width="2"/>
@@ -85,61 +34,40 @@ const createDisasterIcon = (type: DisasterReport['type']) => {
 		</svg>
 	`
 	
-	return new Icon({
-		iconUrl: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`,
-		iconSize: [32, 32],
-		iconAnchor: [16, 16],
-		popupAnchor: [0, -16],
+	const iconUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`
+	
+	return new Style({
+		image: new Icon({
+			src: iconUrl,
+			scale: 1,
+			anchor: [0.5, 1],
+			anchorXUnits: 'fraction',
+			anchorYUnits: 'fraction',
+		}),
 	})
 }
 
-// Component to handle map click events
-const MapClickHandler = ({ onMapClick }: { onMapClick?: (coordinates: Coordinates) => void }) => {
-	useMapEvents({
-		click: (e) => {
-			if (onMapClick) {
-				onMapClick({
-					lat: e.latlng.lat,
-					lng: e.latlng.lng,
-				})
-			}
-		},
+// Create user location icon style
+const createUserLocationStyle = () => {
+	const svgString = `
+		<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+			<circle cx="16" cy="16" r="14" fill="#3B82F6" stroke="white" stroke-width="3"/>
+			<circle cx="16" cy="16" r="6" fill="white"/>
+			<circle cx="16" cy="16" r="2" fill="#3B82F6"/>
+		</svg>
+	`
+	
+	const iconUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`
+	
+	return new Style({
+		image: new Icon({
+			src: iconUrl,
+			scale: 1,
+			anchor: [0.5, 0.5],
+			anchorXUnits: 'fraction',
+			anchorYUnits: 'fraction',
+		}),
 	})
-	return null
-}
-
-// Component to handle smooth map transitions
-const MapTransitionHandler = ({ 
-	center, 
-	zoom = 15, 
-	duration = 1000 
-}: { 
-	center?: Coordinates
-	zoom?: number
-	duration?: number
-}) => {
-	const map = useMap()
-	const previousCenter = useRef<Coordinates | null>(null)
-
-	useEffect(() => {
-		if (center && map) {
-			// Only animate if the center has actually changed
-			if (!previousCenter.current || 
-				previousCenter.current.lat !== center.lat || 
-				previousCenter.current.lng !== center.lng) {
-				
-				// Smooth fly to the new location
-				map.flyTo([center.lat, center.lng], zoom, {
-					duration: duration / 1000, // Convert to seconds
-					easeLinearity: 0.1,
-				})
-				
-				previousCenter.current = center
-			}
-		}
-	}, [center, zoom, duration, map])
-
-	return null
 }
 
 export const DisasterMap = ({ 
@@ -151,95 +79,250 @@ export const DisasterMap = ({
 	zoom = 13,
 	className 
 }: DisasterMapProps) => {
-	const [mapCenter, setMapCenter] = useState<Coordinates>(center || { lat: 6.5244, lng: 3.3792 }) // Lagos default
-	
-	// Debug user location in map component
-	console.log('DisasterMap - userLocation:', userLocation)
-	console.log('DisasterMap - center:', center)
+	const mapRef = useRef<HTMLDivElement>(null)
+	const mapInstanceRef = useRef<Map | null>(null)
+	const popupRef = useRef<HTMLDivElement>(null)
+	const popupOverlayRef = useRef<Overlay | null>(null)
+	const markersSourceRef = useRef<VectorSource | null>(null)
+	const userLocationSourceRef = useRef<VectorSource | null>(null)
+	const previousCenterRef = useRef<Coordinates | null>(null)
 
+	// Initialize map
 	useEffect(() => {
-		if (center) {
-			setMapCenter(center)
+		if (!mapRef.current) return
+
+		// Create popup element
+		const popupElement = document.createElement('div')
+		popupElement.className = 'ol-popup'
+		popupElement.style.display = 'none'
+		if (popupRef.current) {
+			popupRef.current.appendChild(popupElement)
 		}
-	}, [center])
 
-	useEffect(() => {
-		if (userLocation && !center) {
-			setMapCenter(userLocation)
-		}
-	}, [userLocation, center])
+		// Create popup overlay
+		const popupOverlay = new Overlay({
+			element: popupElement,
+			autoPan: {
+				animation: {
+					duration: 250,
+				},
+			},
+		})
+		popupOverlayRef.current = popupOverlay
 
-	useEffect(() => {
-		if (selectedReport && !center) {
-			setMapCenter(selectedReport.location)
-		}
-	}, [selectedReport, center])
+		// Create vector sources for markers
+		const markersSource = new VectorSource()
+		markersSourceRef.current = markersSource
 
+		const userLocationSource = new VectorSource()
+		userLocationSourceRef.current = userLocationSource
 
+		// Create vector layers
+		const markersLayer = new VectorLayer({
+			source: markersSource,
+		})
 
-	return (
-		<div className={cn('w-full h-full', className)}>
-			<MapContainer
-				center={mapCenter}
-				zoom={zoom}
-				className="w-full h-full"
-				zoomControl={true}
-			>
-				<TileLayer
-					attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-					url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-				/>
-				
-				{/* Map transition handler for smooth animations */}
-				<MapTransitionHandler 
-					center={center || selectedReport?.location} 
-					zoom={center || selectedReport ? 15 : zoom}
-					duration={1000}
-				/>
-				
-				{/* User location marker */}
-				{userLocation && (
-					<Marker
-						position={[userLocation.lat, userLocation.lng]}
-						icon={new Icon({
-							iconUrl: `data:image/svg+xml;base64,${btoa(`
-								<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-									<circle cx="16" cy="16" r="14" fill="#3B82F6" stroke="white" stroke-width="3"/>
-									<circle cx="16" cy="16" r="6" fill="white"/>
-									<circle cx="16" cy="16" r="2" fill="#3B82F6"/>
-								</svg>
-							`)}`,
-							iconSize: [32, 32],
-							iconAnchor: [16, 16],
-						})}
-					>
-						<Popup>
-							<div className="text-center">
-								<div className="font-semibold text-blue-600">📍 Your Location</div>
-								<div className="text-sm text-gray-600">
-									{userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
+		const userLocationLayer = new VectorLayer({
+			source: userLocationSource,
+		})
+
+		// Create map with highly optimized tile source for maximum speed
+		const tileSource = new XYZ({
+			// Using CartoDB Light (lighter/faster than Voyager) with maximum subdomains for parallel loading
+			url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+			attributions: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+			maxZoom: 19, // Slightly lower max zoom for faster loading
+			crossOrigin: 'anonymous',
+			// Maximum cache size for fastest tile retrieval
+			cacheSize: 1024,
+			// Enable tile transitions for smoother loading
+			transition: 0,
+		})
+
+		const map = new Map({
+			target: mapRef.current,
+			layers: [
+				new TileLayer({
+					source: tileSource,
+					// Aggressive preloading for instant navigation (preload 3 layers of tiles)
+					preload: 3,
+					// Use hardware acceleration
+					opacity: 1,
+				}),
+				markersLayer,
+				userLocationLayer,
+			],
+			view: new View({
+				center: fromLonLat([center?.lng || 3.3792, center?.lat || 6.5244]),
+				zoom: zoom,
+				// Optimize view for performance
+				enableRotation: false, // Disable rotation for faster rendering
+				smoothExtentConstraint: true,
+				// Faster animations
+				constrainResolution: false, // Allow intermediate zoom levels for smoother experience
+			}),
+			overlays: [popupOverlay],
+		})
+
+		// Handle map clicks and marker clicks
+		map.on('singleclick', (event) => {
+			const feature = map.forEachFeatureAtPixel(event.pixel, (feature) => feature)
+			
+			if (feature) {
+				const geometry = feature.getGeometry()
+				if (geometry instanceof Point) {
+					const coordinates = geometry.getCoordinates()
+					const lonLat = toLonLat(coordinates)
+					
+					// Get report data from feature
+					const reportData = feature.get('reportData')
+					const isUserLocation = feature.get('isUserLocation')
+					
+					if (reportData) {
+						// Render disaster popup
+						const popupContent = document.createElement('div')
+						popupContent.className = 'min-w-[250px]'
+						
+						// Create close button
+						const closeButton = document.createElement('a')
+						closeButton.className = 'ol-popup-closer'
+						closeButton.href = '#'
+						closeButton.innerHTML = '×'
+						closeButton.onclick = (e) => {
+							e.preventDefault()
+							popupOverlay.setPosition(undefined)
+							return false
+						}
+						
+						// Create popup content
+						const content = document.createElement('div')
+						content.className = 'space-y-2'
+						content.innerHTML = `
+							<div class="flex items-center gap-2">
+								<span class="text-lg">${getDisasterEmoji(reportData.type)}</span>
+								<div>
+									<h3 class="font-semibold text-gray-900">${getDisasterDisplayName(reportData.type)}</h3>
+									<span class="text-xs px-2 py-1 rounded-full ${getStatusColor(reportData.status)}">${reportData.status}</span>
 								</div>
 							</div>
-						</Popup>
-					</Marker>
-				)}
+							<p class="text-sm text-gray-700">${reportData.description}</p>
+							<div class="text-xs text-gray-500 space-y-1">
+								<div>📍 ${reportData.location.lat.toFixed(4)}, ${reportData.location.lng.toFixed(4)}</div>
+								${reportData.imageUrl ? `<div class="mt-2"><img src="${reportData.imageUrl}" alt="Disaster report" class="w-full h-24 object-cover rounded" /></div>` : ''}
+							</div>
+						`
+						
+						popupContent.appendChild(closeButton)
+						popupContent.appendChild(content)
+						
+						popupElement.innerHTML = ''
+						popupElement.appendChild(popupContent)
+						popupOverlay.setPosition(coordinates)
+					} else if (isUserLocation) {
+						// Render user location popup
+						const closeButton = document.createElement('a')
+						closeButton.className = 'ol-popup-closer'
+						closeButton.href = '#'
+						closeButton.innerHTML = '×'
+						closeButton.onclick = (e) => {
+							e.preventDefault()
+							popupOverlay.setPosition(undefined)
+							return false
+						}
+						
+						popupElement.innerHTML = `
+							${closeButton.outerHTML}
+							<div class="text-center">
+								<div class="font-semibold text-blue-600">📍 Your Location</div>
+								<div class="text-sm text-gray-600">${lonLat[1].toFixed(4)}, ${lonLat[0].toFixed(4)}</div>
+							</div>
+						`
+						popupOverlay.setPosition(coordinates)
+					}
+				}
+			} else {
+				// No feature clicked - handle map click callback
+				if (onMapClick) {
+					const coordinates = toLonLat(event.coordinate)
+					onMapClick({
+						lng: coordinates[0],
+						lat: coordinates[1],
+					})
+				}
+				// Close popup if clicking elsewhere
+				popupOverlay.setPosition(undefined)
+			}
+		})
 
-				{/* Disaster report markers */}
-				{reports.map((report) => (
-					<Marker
-						key={report.id}
-						position={[report.location.lat, report.location.lng]}
-						icon={createDisasterIcon(report.type)}
-					>
-						<Popup className="min-w-[250px]">
-							<DisasterPopup report={report} userLocation={userLocation} />
-						</Popup>
-					</Marker>
-				))}
+		mapInstanceRef.current = map
 
-				{/* Map click handler */}
-				<MapClickHandler onMapClick={onMapClick} />
-			</MapContainer>
+		return () => {
+			map.setTarget(undefined)
+		}
+	}, [])
+
+	// Update markers when reports change
+	useEffect(() => {
+		if (!markersSourceRef.current) return
+
+		markersSourceRef.current.clear()
+
+		reports.forEach((report) => {
+			const feature = new Feature({
+				geometry: new Point(fromLonLat([report.location.lng, report.location.lat])),
+			})
+			feature.setStyle(createDisasterIconStyle(report.type))
+			feature.set('reportData', report)
+			markersSourceRef.current?.addFeature(feature)
+		})
+	}, [reports])
+
+	// Update user location marker
+	useEffect(() => {
+		if (!userLocationSourceRef.current) return
+
+		userLocationSourceRef.current.clear()
+
+		if (userLocation) {
+			const feature = new Feature({
+				geometry: new Point(fromLonLat([userLocation.lng, userLocation.lat])),
+			})
+			feature.setStyle(createUserLocationStyle())
+			feature.set('isUserLocation', true)
+			userLocationSourceRef.current.addFeature(feature)
+		}
+	}, [userLocation])
+
+	// Handle center and zoom changes with smooth animation
+	useEffect(() => {
+		if (!mapInstanceRef.current) return
+
+		const targetCenter = center || selectedReport?.location || userLocation
+		if (!targetCenter) return
+
+		// Only animate if center has changed
+		if (
+			!previousCenterRef.current ||
+			previousCenterRef.current.lat !== targetCenter.lat ||
+			previousCenterRef.current.lng !== targetCenter.lng
+		) {
+			const view = mapInstanceRef.current.getView()
+			const targetZoom = center || selectedReport ? 15 : zoom
+
+			view.animate({
+				center: fromLonLat([targetCenter.lng, targetCenter.lat]),
+				zoom: targetZoom,
+				duration: 1000,
+			})
+
+			previousCenterRef.current = targetCenter
+		}
+	}, [center, selectedReport, userLocation, zoom])
+
+	return (
+		<div className={cn('w-full h-full relative', className)}>
+			<div ref={mapRef} className="w-full h-full" />
+			<div ref={popupRef} className="absolute top-0 left-0 pointer-events-none" />
 		</div>
 	)
 }
