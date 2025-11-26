@@ -11,14 +11,17 @@
 		@apply bg-gray-50 text-gray-900;
 	}
 	
-	/* OpenLayers map fixes - optimized for performance */
+	/* OpenLayers map fixes - ultra-optimized for maximum performance */
 	.ol-viewport {
 		height: 100%;
 		width: 100%;
 		position: relative;
-		/* Hardware acceleration for faster rendering */
+		/* Maximum hardware acceleration */
 		transform: translateZ(0);
 		will-change: transform;
+		/* GPU acceleration */
+		backface-visibility: hidden;
+		perspective: 1000px;
 	}
 	
 	.ol-map {
@@ -28,16 +31,30 @@
 		/* Optimize rendering performance */
 		image-rendering: -webkit-optimize-contrast;
 		image-rendering: crisp-edges;
+		/* Force GPU acceleration */
+		transform: translateZ(0);
 	}
 	
-	/* Optimize tile rendering for speed */
+	/* Optimize tile rendering for maximum speed */
 	.ol-layer {
 		will-change: transform;
+		transform: translateZ(0);
+		backface-visibility: hidden;
 	}
 	
 	.ol-tile {
 		image-rendering: -webkit-optimize-contrast;
 		image-rendering: crisp-edges;
+		/* Faster tile rendering */
+		transform: translateZ(0);
+		/* Optimize image loading */
+		image-rendering: auto;
+	}
+	
+	/* Optimize canvas rendering */
+	.ol-layer canvas {
+		image-rendering: auto;
+		transform: translateZ(0);
 	}
 	
 	/* OpenLayers popup styling */

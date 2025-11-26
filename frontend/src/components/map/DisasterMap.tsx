@@ -126,17 +126,19 @@ export const DisasterMap = ({
 			source: userLocationSource,
 		})
 
-		// Create map with highly optimized tile source for maximum speed
+		// Create map with ultra-optimized tile source for maximum speed
 		const tileSource = new XYZ({
-			// Using CartoDB Light (lighter/faster than Voyager) with maximum subdomains for parallel loading
-			url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+			// Using CartoDB Light with maximum subdomains (a-d) for maximum parallel loading
+			// @2x for retina displays, but we'll use regular for faster loading
+			url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
 			attributions: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-			maxZoom: 19, // Slightly lower max zoom for faster loading
+			maxZoom: 18, // Lower max zoom for faster loading (18 is usually sufficient)
 			crossOrigin: 'anonymous',
 			// Maximum cache size for fastest tile retrieval
-			cacheSize: 1024,
-			// Enable tile transitions for smoother loading
+			cacheSize: 2048, // Doubled cache size
+			// No transition for instant tile updates
 			transition: 0,
+			// Optimized tile loading - using default but with crossOrigin set
 		})
 
 		const map = new Map({
@@ -144,10 +146,11 @@ export const DisasterMap = ({
 			layers: [
 				new TileLayer({
 					source: tileSource,
-					// Aggressive preloading for instant navigation (preload 3 layers of tiles)
-					preload: 3,
-					// Use hardware acceleration
+					// Maximum preloading for instant navigation
+					preload: 4, // Increased from 3 to 4
 					opacity: 1,
+					// Use extent to limit tile loading to visible area
+					extent: undefined, // Load all tiles for smoother panning
 				}),
 				markersLayer,
 				userLocationLayer,
@@ -155,13 +158,14 @@ export const DisasterMap = ({
 			view: new View({
 				center: fromLonLat([center?.lng || 3.3792, center?.lat || 6.5244]),
 				zoom: zoom,
-				// Optimize view for performance
-				enableRotation: false, // Disable rotation for faster rendering
+				// Maximum performance optimizations
+				enableRotation: false,
 				smoothExtentConstraint: true,
-				// Faster animations
-				constrainResolution: false, // Allow intermediate zoom levels for smoother experience
+				constrainResolution: false,
 			}),
 			overlays: [popupOverlay],
+			// Performance optimizations
+			pixelRatio: Math.min(window.devicePixelRatio || 1, 2), // Limit pixel ratio for faster rendering
 		})
 
 		// Handle map clicks and marker clicks
@@ -320,8 +324,16 @@ export const DisasterMap = ({
 	}, [center, selectedReport, userLocation, zoom])
 
 	return (
-		<div className={cn('w-full h-full relative', className)}>
-			<div ref={mapRef} className="w-full h-full" />
+		<div className={cn('w-full h-full relative', className)} style={{ transform: 'translateZ(0)' }}>
+			<div 
+				ref={mapRef} 
+				className="w-full h-full"
+				style={{ 
+					transform: 'translateZ(0)',
+					willChange: 'transform',
+					backfaceVisibility: 'hidden'
+				}} 
+			/>
 			<div ref={popupRef} className="absolute top-0 left-0 pointer-events-none" />
 		</div>
 	)
