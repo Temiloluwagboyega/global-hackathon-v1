@@ -21,7 +21,7 @@ const MapPage = () => {
 	const [mapZoom, setMapZoom] = useState(13)
 
 	const { data: reportsData } = useReports()
-	const { location: userLocation, getCurrentPosition, loading: locationLoading, error: geoError } = useGeolocation()
+	const { location: userLocation, getCurrentPosition, loading: locationLoading, error: geoError, permission } = useGeolocation()
 	const { shouldShow: shouldShowWelcome, markWelcomeModalViewed, hideWelcomeModal } = useWelcomeModal()
 
 	const reports = reportsData?.reports || []
@@ -107,8 +107,8 @@ const MapPage = () => {
 						</div>
 					)}
 					
-					{/* Location Error Indicator */}
-					{geoError && (
+					{/* Location Error Indicator - Only show if permission is actually denied */}
+					{geoError && permission === 'denied' && (
 						<div className="absolute top-4 left-4 z-[9999] bg-red-50 border border-red-200 rounded-lg shadow-lg p-3">
 							<div className="text-sm text-red-700">
 								<p className="font-medium">Location access denied</p>

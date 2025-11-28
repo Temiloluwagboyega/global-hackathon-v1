@@ -164,7 +164,37 @@ export const useGeolocation = (options: GeolocationOptions = {}) => {
 
 	useEffect(() => {
 		checkPermission()
-	}, [checkPermission])
+		
+		// Listen for permission changes
+		if (navigator.permissions) {
+			let permissionStatus: PermissionStatus | null = null
+			
+			navigator.permissions.query({ name: 'geolocation' as PermissionName })
+				.then((status) => {
+					permissionStatus = status
+					setState(prev => ({ ...prev, permission: status.state as 'granted' | 'denied' | 'prompt' }))
+					
+					// Listen for permission changes
+					status.onchange = () => {
+						setState(prev => ({ ...prev, permission: status.state as 'granted' | 'denied' | 'prompt' }))
+						// If permission is granted, clear any errors and try to get location
+						if (status.state === 'granted') {
+							setState(prev => ({ ...prev, error: null }))
+							getCurrentPosition()
+						}
+					}
+				})
+				.catch(() => {
+					// Permission API not supported or failed
+				})
+			
+			return () => {
+				if (permissionStatus) {
+					permissionStatus.onchange = null
+				}
+			}
+		}
+	}, [checkPermission, getCurrentPosition])
 
 	return {
 		...state,

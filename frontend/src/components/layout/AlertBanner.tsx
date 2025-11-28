@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AlertTriangle, X, MapPin, CheckCircle, Clock } from 'lucide-react'
 import { getDisasterEmoji, getDisasterDisplayName, formatDistance } from '../../utils'
 import { useNearbyReports } from '../../hooks/utils/useDistance'
@@ -40,6 +40,24 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 	const nearbyReports = useNearbyReports(userLocation, reports, 5) // 5km radius
 	const reportUpdates = useReportUpdates(reports)
 
+	const dismissAlert = useCallback((alertId: string) => {
+		// First mark as dismissed for fade-out animation
+		setAlerts(prev => 
+			prev.map(alert => 
+				alert.id === alertId 
+					? { ...alert, dismissed: true }
+					: alert
+			)
+		)
+		
+		// Remove from array after animation (300ms)
+		setTimeout(() => {
+			setAlerts(prev => prev.filter(alert => alert.id !== alertId))
+		}, 300)
+		
+		onDismiss?.(alertId)
+	}, [onDismiss])
+
 	// Set up global alert function
 	useEffect(() => {
 		showAlertFunction = (alert: Omit<AlertState, 'id' | 'dismissed'>) => {
@@ -51,26 +69,18 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 			setAlerts(prev => [...prev, newAlert])
 			
 			// Auto-dismiss after 5 seconds
-			setTimeout(() => {
+			const timeoutId = setTimeout(() => {
 				dismissAlert(newAlert.id)
 			}, 5000)
+			
+			// Store timeout ID for cleanup if needed
+			return () => clearTimeout(timeoutId)
 		}
 		
 		return () => {
 			showAlertFunction = null
 		}
-	}, [])
-
-	const dismissAlert = (alertId: string) => {
-		setAlerts(prev => 
-			prev.map(alert => 
-				alert.id === alertId 
-					? { ...alert, dismissed: true }
-					: alert
-			)
-		)
-		onDismiss?.(alertId)
-	}
+	}, [dismissAlert])
 
 	// Handle new reports
 	useEffect(() => {
@@ -108,12 +118,15 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 				setAlerts(prev => [...prev, latestAlert])
 				
 				// Auto-dismiss after 5 seconds
-				setTimeout(() => {
+				const timeoutId = setTimeout(() => {
 					dismissAlert(latestAlert.id)
 				}, 5000)
+				
+				// Cleanup timeout on unmount
+				return () => clearTimeout(timeoutId)
 			}
 		}
-	}, [userLocation, nearbyReports, seenReportIds])
+	}, [userLocation, nearbyReports, seenReportIds, dismissAlert])
 
 	// Handle status updates
 	useEffect(() => {
@@ -160,21 +173,22 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 				setAlerts(prev => [...prev, statusUpdateAlert])
 				
 				// Auto-dismiss after 5 seconds
-				setTimeout(() => {
+				const timeoutId = setTimeout(() => {
 					dismissAlert(statusUpdateAlert.id)
 				}, 5000)
+				
+				// Cleanup timeout on unmount
+				return () => clearTimeout(timeoutId)
 			}
 		}
-	}, [reportUpdates, reports, userLocation, seenUpdateIds])
+	}, [reportUpdates, reports, userLocation, seenUpdateIds, dismissAlert])
 
-	const activeAlerts = alerts.filter(alert => !alert.dismissed)
-
-	if (activeAlerts.length === 0) {
+	if (alerts.length === 0) {
 		return null
 	}
 
-	// Only show the most recent alert
-	const currentAlert = activeAlerts[activeAlerts.length - 1]
+	// Show the most recent alert (even if it's being dismissed, for fade-out animation)
+	const currentAlert = alerts[alerts.length - 1]
 
 	// Determine alert styling based on type and status
 	const getAlertStyling = (alert: AlertState) => {
@@ -275,7 +289,8 @@ export const AlertBanner = ({ userLocation, reports, onDismiss, className }: Ale
 		<div className={cn('fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[9998] max-w-sm w-full px-4', className)}>
 			<div
 				className={cn(
-					'text-nowrap border rounded-lg p-3 shadow-lg animate-in slide-in-from-bottom-2 duration-500',
+					'text-nowrap border rounded-lg p-3 shadow-lg transition-opacity duration-300',
+					currentAlert.dismissed ? 'opacity-0' : 'opacity-100 animate-in slide-in-from-bottom-2 duration-500',
 					styling.bgColor,
 					styling.borderColor
 				)}
